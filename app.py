@@ -389,6 +389,41 @@ def api_fortune():
     return jsonify(result)
 
 
+@app.route("/api/voice")
+def api_voice():
+    """返回语音播报文本"""
+    birth = request.args.get("birth", "")
+    date = request.args.get("date", "")
+
+    try:
+        birth_dt = datetime.strptime(birth, "%Y/%m/%d/%H:%M")
+    except Exception:
+        return jsonify({"text": "请先设置你的生辰"})
+
+    try:
+        target = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
+    except Exception:
+        target = datetime.now()
+
+    daily = get_daily(target)
+    bazi = calc_bazi(birth_dt)
+    analysis = analyze_bazi(bazi)
+    advice = get_advice(bazi, daily, analysis)
+
+    text = (
+        f"今天是{daily['lunar']}，{daily['gz']}日。"
+        f"{advice['icon']} {advice['msg']}。"
+        f"今日穿搭建议{advice['outfit']}，"
+        f"财神位在{daily['caishen']}，"
+        f"幸运数字{advice['lucky_num']}。"
+        f"宜：{'、'.join(daily['yi'][:3])}。"
+        f"忌：{'、'.join(daily['ji'][:3])}。"
+        f"祝你今天顺顺利利！"
+    )
+
+    return jsonify({"text": text})
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
