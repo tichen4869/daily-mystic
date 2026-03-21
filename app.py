@@ -411,14 +411,13 @@ def api_voice():
     advice = get_advice(bazi, daily, analysis)
 
     text = (
-        f"今天是{daily['lunar']}，{daily['gz']}日。"
-        f"{advice['icon']} {advice['msg']}。"
-        f"今日穿搭建议{advice['outfit']}，"
-        f"财神位在{daily['caishen']}，"
-        f"幸运数字{advice['lucky_num']}。"
-        f"宜：{'、'.join(daily['yi'][:3])}。"
-        f"忌：{'、'.join(daily['ji'][:3])}。"
-        f"祝你今天顺顺利利！"
+        f"早安。今天是{daily['lunar']}，{daily['gz']}日。"
+        f"{advice['msg']}。"
+        f"穿搭方面，建议今天穿{advice['outfit']}会比较旺。"
+        f"财神位在{daily['caishen']}方向。"
+        f"今天适合做的事有：{'、'.join(daily['yi'][:3])}。"
+        f"尽量避免：{'、'.join(daily['ji'][:3])}。"
+        f"祝你今天一切顺利。"
     )
 
     return jsonify({"text": text})
