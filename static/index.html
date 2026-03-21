@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>每日玄学</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--particle:#B5A06B;--glow:rgba(181,160,107,0.06)}
+body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8;color:#3B2F2F;
+  min-height:100vh;display:flex;justify-content:center;align-items:flex-start}
+.wrap{width:100%;max-width:420px;padding:8px 12px;position:relative}
+
+.particle{position:fixed;width:4px;height:4px;border-radius:50%;background:var(--particle);
+  opacity:0;pointer-events:none;z-index:0}
+@keyframes f1{0%{opacity:0;transform:translateY(100vh) translateX(0)}10%{opacity:.5}90%{opacity:.2}100%{opacity:0;transform:translateY(-10vh) translateX(25px)}}
+@keyframes f2{0%{opacity:0;transform:translateY(100vh) translateX(0)}10%{opacity:.4}90%{opacity:.15}100%{opacity:0;transform:translateY(-10vh) translateX(-20px)}}
+.particle:nth-child(odd){animation:f1 linear infinite}
+.particle:nth-child(even){animation:f2 linear infinite}
+.particle:nth-child(1){left:8%;animation-duration:12s;animation-delay:0s;width:3px;height:3px}
+.particle:nth-child(2){left:18%;animation-duration:14s;animation-delay:1.2s}
+.particle:nth-child(3){left:28%;animation-duration:11s;animation-delay:3s;width:5px;height:5px}
+.particle:nth-child(4){left:38%;animation-duration:15s;animation-delay:.5s;width:3px;height:3px}
+.particle:nth-child(5){left:48%;animation-duration:13s;animation-delay:2.8s}
+.particle:nth-child(6){left:55%;animation-duration:10s;animation-delay:4.2s;width:5px;height:5px}
+.particle:nth-child(7){left:62%;animation-duration:14s;animation-delay:1.8s;width:3px;height:3px}
+.particle:nth-child(8){left:70%;animation-duration:12s;animation-delay:3.5s}
+.particle:nth-child(9){left:78%;animation-duration:16s;animation-delay:.8s;width:3px;height:3px}
+.particle:nth-child(10){left:88%;animation-duration:11s;animation-delay:2.2s;width:5px;height:5px}
+.particle:nth-child(11){left:42%;animation-duration:13s;animation-delay:4.8s}
+.particle:nth-child(12){left:15%;animation-duration:15s;animation-delay:5.5s;width:3px;height:3px}
+
+.wrap::before{content:'';position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);
+  width:300px;height:300px;background:radial-gradient(circle,var(--glow) 0%,transparent 70%);
+  opacity:.12;pointer-events:none;z-index:0}
+
+.card{background:#FFFDF7;border-radius:8px;padding:8px 12px;margin-bottom:6px;
+  box-shadow:0 1px 4px rgba(80,50,20,.08);position:relative;z-index:1}
+
+/* profile toggle */
+.ptog{text-align:center;font-size:12px;color:#9B8B7A;cursor:pointer;padding:4px 0;
+  letter-spacing:2px;z-index:1;position:relative;user-select:none}
+.ptog::before,.ptog::after{content:'';display:inline-block;width:20px;height:1px;
+  background:#C9B99A;vertical-align:middle;margin:0 6px}
+.ptog .pname{color:#C4956A;font-weight:500}
+.ptog .ar{font-size:8px;transition:transform .2s}
+.ptog.open .ar{transform:rotate(180deg)}
+
+/* profile */
+.prof{max-height:0;overflow:hidden;transition:max-height .5s ease;z-index:1;position:relative}
+.prof.show{max-height:600px}
+
+/* birth inputs */
+.blabels{display:flex;justify-content:center;gap:0;margin-bottom:4px}
+.blabels span{font-size:11px;color:#9B8B7A;letter-spacing:1px}
+.blabels .bly{width:56px;text-align:center}
+.blabels .blm,.blabels .bld,.blabels .blh,.blabels .blmi{width:34px;text-align:center}
+.blabels .bls{width:14px}
+.brow{display:flex;align-items:baseline;justify-content:center;margin-bottom:8px}
+.bsep{font-size:18px;color:#C4956A;padding:0 1px;font-weight:300}
+.brow input{border:none;border-bottom:1.5px solid #D4C8B0;background:transparent;
+  text-align:center;font-size:18px;color:#3B2F2F;padding:2px 0;font-family:inherit;outline:none}
+.brow input:focus{border-bottom-color:#C4956A}
+.brow input.yr{width:56px}
+.brow input.md{width:34px}
+.brow input.hm{width:34px}
+
+/* bazi */
+.bzgrid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;margin-bottom:6px}
+.bzc{text-align:center;font-size:16px;line-height:1.4;padding:3px 0}
+.bzc .gz{font-weight:600;color:#5A3E28}
+.bzc .bl{font-size:10px;color:#9B8B7A}
+
+/* ming info */
+.mrow{display:flex;gap:10px;font-size:12px;color:#6B5744;margin-bottom:4px}
+.mrow .v{color:#3B2F2F;font-weight:600}
+.mrow .ml{color:#9B8B7A;font-size:10px;margin-right:2px}
+.mtrait{font-size:12px;color:#7A6B5A;line-height:1.5;margin-bottom:5px;
+  padding:4px 8px;background:#F9F5EE;border-radius:4px;border-left:2px solid #C4A44A}
+.xjrow{display:flex;gap:12px;align-items:center}
+.xjg{display:flex;align-items:center;gap:3px}
+.xjg .gl{font-size:10px;color:#9B8B7A;letter-spacing:1px}
+.xt{font-size:11px;padding:2px 7px;border-radius:3px;display:inline-block;margin:1px}
+.xi{background:#E8F5E9;color:#2E7D32}
+.ji-wx{background:#FFEBEE;color:#C62828}
+
+/* person switcher */
+.persons{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.pbtn{font-size:12px;padding:4px 10px;border-radius:14px;border:1px solid #D4C8B0;
+  background:#FFFDF7;color:#7A6B5A;cursor:pointer;transition:all .15s;font-family:inherit}
+.pbtn.active{background:#C4956A;color:#fff;border-color:#C4956A}
+.pbtn:hover{border-color:#C4956A}
+.padd{font-size:14px;width:28px;height:28px;border-radius:50%;border:1px dashed #C9B99A;
+  background:transparent;color:#9B8B7A;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;font-family:inherit}
+.padd:hover{border-color:#C4956A;color:#C4956A}
+.pdel{font-size:9px;color:#C62828;cursor:pointer;margin-left:2px;opacity:.5}
+.pdel:hover{opacity:1}
+.pname-input{border:none;border-bottom:1px solid #C4956A;background:transparent;
+  font-size:12px;color:#3B2F2F;width:60px;text-align:center;outline:none;font-family:inherit;
+  padding:2px 0}
+
+/* setup prompt */
+.setup{text-align:center;padding:30px 16px}
+.setup h2{font-size:18px;color:#5A3E28;margin-bottom:10px;font-weight:600}
+.setup p{font-size:13px;color:#9B8B7A;margin-bottom:16px}
+
+/* date */
+.dh{text-align:center;padding:4px 0;position:relative;z-index:1}
+.dnav{display:flex;align-items:center;justify-content:center;gap:10px}
+.dnav .arr{cursor:pointer;font-size:16px;color:#9B8B7A;user-select:none;padding:0 6px}
+.dnav .arr:hover{color:#C4956A}
+.dsolar{font-size:13px;color:#9B8B7A;cursor:pointer}
+.dsolar:hover{color:#C4956A}
+.btoday{font-size:11px;color:#C4956A;cursor:pointer;margin-left:4px;text-decoration:underline;display:none}
+.dlunar{font-size:24px;font-weight:600;color:#3B2F2F;margin:2px 0;letter-spacing:2px}
+.dgz{font-size:12px;color:#7A6B5A}
+.dpw{display:none;margin-top:3px}
+.dpw input{border:1px solid #D4C8B0;border-radius:4px;padding:3px 8px;font-size:12px;
+  font-family:inherit;color:#3B2F2F;background:#FFFDF7}
+
+/* luck */
+.lcard{text-align:center;padding:12px;border-radius:8px;margin-bottom:6px;z-index:1;position:relative}
+.lcard.up{background:linear-gradient(135deg,#E8F5E9,#F1F8E9);border:1px solid #C8E6C9}
+.lcard.down{background:linear-gradient(135deg,#FFEBEE,#FFF3E0);border:1px solid #FFCDD2}
+.lcard.neutral{background:linear-gradient(135deg,#ECEFF1,#F5F5F5);border:1px solid #CFD8DC}
+.licon{font-size:24px;display:block;margin-bottom:3px}
+.lmsg{font-size:15px;line-height:1.6;font-weight:500}
+.lcard.up .lmsg{color:#2E7D32}
+.lcard.down .lmsg{color:#C62828}
+.lcard.neutral .lmsg{color:#546E7A}
+
+/* tips */
+.tips{display:flex;justify-content:space-around;margin-bottom:4px;z-index:1;position:relative}
+.ti{text-align:center;font-size:13px;color:#7A6B5A}
+.ti .tl{font-size:10px;color:#9B8B7A;display:block;margin-bottom:2px}
+.ti .tv{font-weight:500;color:#5A3E28}
+.jrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+  margin-top:5px;padding-top:5px;border-top:1px solid #EDE7DA;z-index:1;position:relative}
+.jrow .jl{font-size:10px;color:#9B8B7A;letter-spacing:2px}
+.jrow .ji{font-size:12px;color:#5A3E28;background:#F5F0E8;padding:3px 10px;
+  border-radius:4px;border:1px solid #E0D8C8}
+
+/* yi ji */
+.yjs{display:flex;gap:8px;margin-bottom:6px;z-index:1;position:relative}
+.yjc{flex:1}
+.yjt{font-size:12px;color:#9B8B7A;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.yjt::after{content:'';flex:1;height:1px;background:#E0D8C8}
+.tw{display:flex;flex-wrap:wrap;gap:4px}
+.tg{font-size:12px;padding:3px 8px;border-radius:4px;cursor:pointer;user-select:none;
+  transition:all .15s;border:1px solid transparent}
+.yi-tag{background:#F1F8E9;color:#558B2F;border-color:#C5E1A5}
+.yi-tag.checked{background:#558B2F;color:#fff}
+.ji-tag{background:#FFF3E0;color:#BF360C;border-color:#FFCC80}
+.ji-tag.checked{background:#BF360C;color:#fff}
+.thint{font-size:10px;color:#B0A090;text-align:center;margin-top:2px}
+
+/* journal */
+.jsec{z-index:1;position:relative}
+.cer{display:flex;gap:4px;margin-bottom:4px}
+.cer input{flex:1;border:1px solid #D4C8B0;border-radius:4px;padding:4px 8px;
+  font-size:12px;background:#FFFDF7;font-family:inherit;color:#3B2F2F;outline:none}
+.cer input:focus{border-color:#C4956A}
+.cer button{border:none;background:#C4956A;color:#fff;border-radius:4px;width:28px;
+  font-size:14px;cursor:pointer}
+.ctags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px}
+.ct{font-size:11px;padding:3px 8px;border-radius:4px;background:#FFF8E1;color:#8D6E3F;
+  border:1px solid #E0D0B0;display:flex;align-items:center;gap:2px}
+.ct .x{cursor:pointer;font-size:10px;opacity:.6}
+.ct .x:hover{opacity:1}
+.modr{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.modr .ml{font-size:12px;color:#9B8B7A;white-space:nowrap}
+.mbtn{font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid #D4C8B0;
+  background:#FFFDF7;color:#7A6B5A;cursor:pointer;transition:all .15s}
+.mbtn.active{background:#C4956A;color:#fff;border-color:#C4956A}
+.nrow{margin-bottom:6px}
+.nrow textarea{width:100%;border:1px solid #D4C8B0;border-radius:4px;padding:4px 8px;
+  font-size:12px;font-family:inherit;color:#3B2F2F;background:#FFFDF7;resize:none;height:34px;outline:none}
+.nrow textarea:focus{border-color:#C4956A}
+.sbtn{width:100%;border:none;background:linear-gradient(135deg,#C4956A,#D4A574);color:#fff;
+  padding:7px 0;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:2px}
+.sbtn:hover{opacity:.9}
+
+.foot{text-align:center;font-size:11px;color:#B0A090;padding:6px 0;letter-spacing:3px;z-index:1;position:relative}
+
+.toast{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(59,47,47,.85);
+  color:#fff;padding:8px 20px;border-radius:8px;font-size:12px;z-index:999;opacity:0;
+  transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* no-birth state */
+#mainContent{display:none}
+</style>
+</head>
+<body>
+
+<div class="particle"></div><div class="particle"></div><div class="particle"></div>
+<div class="particle"></div><div class="particle"></div><div class="particle"></div>
+<div class="particle"></div><div class="particle"></div><div class="particle"></div>
+<div class="particle"></div><div class="particle"></div><div class="particle"></div>
+
+<div class="wrap">
+
+  <!-- 命盘 toggle -->
+  <div class="ptog" id="ptog" onclick="toggleProfile()">
+    <span id="ptogLabel">命 盘</span> <span class="ar">▾</span>
+  </div>
+
+  <!-- 命盘 section -->
+  <div class="prof" id="profSec">
+    <div class="card" onclick="handleProfClick(event)">
+      <div class="persons" id="personList"></div>
+      <div class="blabels">
+        <span class="bly">年</span><span class="bls"></span>
+        <span class="blm">月</span><span class="bls"></span>
+        <span class="bld">日</span><span class="bls"></span>
+        <span class="blh">时</span><span class="bls"></span>
+        <span class="blmi">分</span>
+      </div>
+      <div class="brow">
+        <input type="text" class="yr" id="by" placeholder="YYYY" maxlength="4" onblur="birthBlur()">
+        <span class="bsep">/</span>
+        <input type="text" class="md" id="bm" placeholder="MM" maxlength="2" onblur="birthBlur()">
+        <span class="bsep">/</span>
+        <input type="text" class="md" id="bd" placeholder="DD" maxlength="2" onblur="birthBlur()">
+        <span class="bsep">/</span>
+        <input type="text" class="hm" id="bh" placeholder="HH" maxlength="2" onblur="birthBlur()">
+        <span class="bsep">:</span>
+        <input type="text" class="hm" id="bmi" placeholder="MM" maxlength="2" onblur="birthBlur()">
+      </div>
+      <div id="baziInfo"></div>
+    </div>
+  </div>
+
+  <!-- 首次引导 -->
+  <div class="card setup" id="setupCard">
+    <h2>✧ 每日玄学 ✧</h2>
+    <p>点击上方「命盘」输入你的生辰<br>即可获取每日运势</p>
+  </div>
+
+  <!-- 主内容 -->
+  <div id="mainContent">
+    <div class="dh">
+      <div class="dnav">
+        <span class="arr" onclick="changeDate(-1)">‹</span>
+        <span class="dsolar" id="dsolar" onclick="toggleDP()"></span>
+        <span class="btoday" id="btoday" onclick="goToday()">回到今天</span>
+        <span class="arr" onclick="changeDate(1)">›</span>
+      </div>
+      <div class="dpw" id="dpw"><input type="date" id="dp" onchange="jumpDate(this.value)"></div>
+      <div class="dlunar" id="dlunar"></div>
+      <div class="dgz" id="dgz"></div>
+    </div>
+
+    <div class="card lcard neutral" id="lcard">
+      <span class="licon" id="licon">😐</span>
+      <span class="lmsg" id="lmsg"></span>
+    </div>
+
+    <div class="card">
+      <div class="tips">
+        <div class="ti"><span class="tl">穿搭</span><span class="tv" id="tOutfit"></span></div>
+        <div class="ti"><span class="tl">财神位</span><span class="tv" id="tCaishen"></span></div>
+        <div class="ti"><span class="tl">幸运数</span><span class="tv" id="tLucky"></span></div>
+      </div>
+      <div class="jrow" id="jishiRow"></div>
+    </div>
+
+    <div class="card yjs">
+      <div class="yjc">
+        <div class="yjt" style="color:#558B2F">宜</div>
+        <div class="tw" id="yiTags"></div>
+      </div>
+      <div class="yjc">
+        <div class="yjt" style="color:#BF360C">忌</div>
+        <div class="tw" id="jiTags"></div>
+      </div>
+    </div>
+    <div class="thint">点选今天做了的事</div>
+
+    <div class="card jsec">
+      <div class="cer">
+        <input type="text" id="cInput" placeholder="补充今天做的事…" onkeydown="if(event.key==='Enter')addCE()">
+        <button onclick="addCE()">+</button>
+      </div>
+      <div class="ctags" id="cTags"></div>
+      <div class="modr">
+        <span class="ml">准吗？</span>
+        <button class="mbtn" onclick="selMood('很准',this)">很准</button>
+        <button class="mbtn" onclick="selMood('还行',this)">还行</button>
+        <button class="mbtn" onclick="selMood('不准',this)">不准</button>
+      </div>
+      <div class="nrow"><textarea id="noteIn" placeholder="今日一记…"></textarea></div>
+      <button class="sbtn" onclick="saveJ()">记 录 今 天</button>
+    </div>
+
+    <div class="foot">顺势而为 · 万事可期</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var curDate = new Date().toISOString().split('T')[0];
+  var todayISO = curDate;
+  var mood = '';
+  var customs = [];
+
+  // ─── 基础交互（先定义，确保页面可点击） ───
+  window.toggleProfile = function(){
+    document.getElementById('profSec').classList.toggle('show');
+    document.getElementById('ptog').classList.toggle('open');
+  };
+  window.handleProfClick = function(e){
+    if(e.target.tagName==='INPUT' || e.target.classList.contains('pbtn') ||
+       e.target.classList.contains('padd') || e.target.classList.contains('pdel')) return;
+    var sec = document.getElementById('profSec');
+    if(sec.classList.contains('show')){
+      sec.classList.remove('show');
+      document.getElementById('ptog').classList.remove('open');
+    }
+  };
+
+  // ─── 多人管理 ───
+  // persons: [{name:"我", birth:"1994/04/21/03:14"}, ...]
+  var persons = JSON.parse(localStorage.getItem('mystic_persons') || '[]');
+  var curPersonIdx = parseInt(localStorage.getItem('mystic_curPerson') || '0');
+
+  // 兼容旧数据：如果有旧的单人 birth，迁移过来
+  var oldBirth = localStorage.getItem('mystic_birth');
+  if(oldBirth && persons.length === 0) {
+    persons = [{name:"我", birth: oldBirth}];
+    localStorage.setItem('mystic_persons', JSON.stringify(persons));
+    localStorage.removeItem('mystic_birth');
+  }
+
+  function getCurBirth() {
+    if(persons.length === 0) return '';
+    if(curPersonIdx >= persons.length) curPersonIdx = 0;
+    return persons[curPersonIdx].birth || '';
+  }
+
+  function savePersons() {
+    localStorage.setItem('mystic_persons', JSON.stringify(persons));
+    localStorage.setItem('mystic_curPerson', String(curPersonIdx));
+  }
+
+  function updateToggleLabel() {
+    var label = document.getElementById('ptogLabel');
+    if(persons.length > 0 && persons[curPersonIdx]) {
+      label.innerHTML = '<span class="pname">' + persons[curPersonIdx].name + '</span> 的命盘';
+    } else {
+      label.textContent = '命 盘';
+    }
+  }
+
+  function renderPersons() {
+    var wrap = document.getElementById('personList');
+    wrap.innerHTML = '';
+    updateToggleLabel();
+    persons.forEach(function(p, i) {
+      var btn = document.createElement('span');
+      btn.className = 'pbtn' + (i === curPersonIdx ? ' active' : '');
+      btn.innerHTML = p.name;
+      if(persons.length > 1) {
+        btn.innerHTML += ' <span class="pdel" onclick="event.stopPropagation();rmPerson('+i+')">✕</span>';
+      }
+      btn.onclick = function(e) {
+        if(e.target.classList.contains('pdel')) return;
+        switchPerson(i);
+      };
+      wrap.appendChild(btn);
+    });
+    // 添加按钮
+    var add = document.createElement('button');
+    add.className = 'padd';
+    add.textContent = '+';
+    add.title = '添加新朋友';
+    add.onclick = function(e) { e.stopPropagation(); addPerson(); };
+    wrap.appendChild(add);
+  }
+
+  window.switchPerson = function(i) {
+    curPersonIdx = i;
+    savePersons();
+    fillBirth(getCurBirth());
+    loadFortune();
+    renderPersons();
+  };
+
+  window.addPerson = function() {
+    var name = prompt('给 ta 取个名字（如：小明）');
+    if(!name) return;
+    persons.push({name: name, birth: ''});
+    curPersonIdx = persons.length - 1;
+    savePersons();
+    renderPersons();
+    fillBirth('');
+    document.getElementById('setupCard').style.display = 'block';
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('by').focus();
+  };
+
+  window.rmPerson = function(i) {
+    if(!confirm('删除「'+persons[i].name+'」的命盘？')) return;
+    persons.splice(i, 1);
+    if(curPersonIdx >= persons.length) curPersonIdx = Math.max(0, persons.length - 1);
+    savePersons();
+    renderPersons();
+    if(persons.length > 0) {
+      fillBirth(getCurBirth());
+      loadFortune();
+    } else {
+      document.getElementById('setupCard').style.display = 'block';
+      document.getElementById('mainContent').style.display = 'none';
+    }
+  };
+
+  // 初始化：先尝试从服务器读旧配置
+  function init() {
+    renderPersons();
+    var birth = getCurBirth();
+    if(birth) {
+      fillBirth(birth);
+      loadFortune();
+    } else {
+      // 尝试从本地 config.json 迁移
+      fetch('/api/config').then(function(r){return r.json()}).then(function(d){
+        if(d.birth && persons.length === 0) {
+          persons.push({name:"我", birth: d.birth});
+          curPersonIdx = 0;
+          savePersons();
+          renderPersons();
+          fillBirth(d.birth);
+          loadFortune();
+        } else {
+          document.getElementById('profSec').classList.add('show');
+          document.getElementById('ptog').classList.add('open');
+        }
+      }).catch(function(){
+        document.getElementById('profSec').classList.add('show');
+        document.getElementById('ptog').classList.add('open');
+      });
+    }
+  }
+  init();
+
+  function fillBirth(b) {
+    var p = b.split('/');
+    if(p.length < 3) return;
+    var hm = p[3] ? p[3].split(':') : ['',''];
+    document.getElementById('by').value = p[0];
+    document.getElementById('bm').value = p[1];
+    document.getElementById('bd').value = p[2];
+    document.getElementById('bh').value = hm[0]||'';
+    document.getElementById('bmi').value = hm[1]||'';
+  }
+
+  // 自动跳格
+  ['by','bm','bd','bh','bmi'].forEach(function(id, idx, arr){
+    document.getElementById(id).addEventListener('input', function(){
+      if(idx < arr.length - 1 && this.value.length >= parseInt(this.maxLength)){
+        var next = document.getElementById(arr[idx+1]);
+        next.focus(); next.select();
+      }
+    });
+  });
+
+  // 离开生辰区域才保存
+  var blurTimer = null;
+  window.birthBlur = function(){
+    clearTimeout(blurTimer);
+    blurTimer = setTimeout(function(){
+      var a = document.activeElement;
+      if(a && ['by','bm','bd','bh','bmi'].indexOf(a.id) >= 0) return;
+      saveBirth();
+    }, 200);
+  };
+
+  function saveBirth(){
+    var y=document.getElementById('by').value.trim();
+    var m=document.getElementById('bm').value.trim();
+    var d=document.getElementById('bd').value.trim();
+    var h=document.getElementById('bh').value.trim();
+    var mi=document.getElementById('bmi').value.trim();
+    if(!y||y.length<4||!m||!d||!h||!mi) return;
+    var val = y+'/'+m.padStart(2,'0')+'/'+d.padStart(2,'0')+'/'+h.padStart(2,'0')+':'+mi.padStart(2,'0');
+    if(val === getCurBirth()) return;
+    // 如果是第一个人且列表为空，自动创建
+    if(persons.length === 0) {
+      persons.push({name:"我", birth: val});
+      curPersonIdx = 0;
+    } else {
+      persons[curPersonIdx].birth = val;
+    }
+    savePersons();
+    renderPersons();
+    showToast('命盘已更新');
+    loadFortune();
+  }
+
+  function loadFortune(){
+    var b = getCurBirth();
+    if(!b) return;
+    var url = '/api/fortune?birth='+encodeURIComponent(b)+'&date='+curDate;
+    fetch(url).then(function(r){return r.json()}).then(function(d){
+      renderFortune(d);
+    }).catch(function(){ showToast('加载失败'); });
+  }
+
+  function renderFortune(d){
+    document.getElementById('setupCard').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+
+    // particles color
+    if(d.particle_color){
+      document.documentElement.style.setProperty('--particle', d.particle_color);
+      document.documentElement.style.setProperty('--glow', d.glow_color);
+    }
+
+    // date
+    document.getElementById('dsolar').textContent = d.date_solar||'';
+    document.getElementById('dlunar').textContent = d.lunar||'';
+    document.getElementById('dgz').textContent = (d.gz||'')+'日 · '+(d.wx||'')+'行当令';
+    document.getElementById('btoday').style.display = curDate===todayISO?'none':'inline';
+
+    // bazi info
+    if(d.bazi){
+      var h = '<div class="bzgrid">';
+      var labels = ['年柱','月柱','日柱','时柱'];
+      d.bazi.forEach(function(gz,i){
+        h += '<div class="bzc"><div class="bl">'+labels[i]+'</div><div class="gz">'+gz+'</div></div>';
+      });
+      h += '</div>';
+      h += '<div class="mrow">';
+      h += '<span><span class="ml">命</span><span class="v">'+d.ming+'</span></span>';
+      h += '<span><span class="ml">日主</span><span class="v">'+d.rizhu+'</span></span>';
+      h += '<span><span class="ml">强弱</span><span class="v">'+d.qiangruo+'</span></span>';
+      h += '</div>';
+      h += '<div class="mtrait">'+d.xingge+'</div>';
+      h += '<div class="xjrow">';
+      h += '<div class="xjg"><span class="gl">喜用</span>';
+      d.xi.forEach(function(x){ h += '<span class="xt xi">'+x+'</span>'; });
+      h += '</div><div class="xjg"><span class="gl">忌</span>';
+      d.ji_wx.forEach(function(x){ h += '<span class="xt ji-wx">'+x+'</span>'; });
+      h += '</div></div>';
+      document.getElementById('baziInfo').innerHTML = h;
+    }
+
+    // luck
+    var lc = document.getElementById('lcard');
+    lc.className = 'card lcard '+(d.luck_level||'neutral');
+    document.getElementById('licon').textContent = d.luck_icon||'😐';
+    document.getElementById('lmsg').textContent = d.luck_msg||'';
+
+    // tips
+    document.getElementById('tOutfit').textContent = d.outfit||'';
+    document.getElementById('tCaishen').textContent = d.caishen||'';
+    document.getElementById('tLucky').textContent = d.lucky_num||'';
+
+    // jishi
+    var jr = document.getElementById('jishiRow');
+    jr.innerHTML = '<span class="jl">吉时</span>';
+    (d.jishi||[]).forEach(function(j){
+      jr.innerHTML += '<span class="ji">'+j+'</span>';
+    });
+
+    // yi ji
+    renderTags('yiTags', d.yi||[], 'yi-tag');
+    renderTags('jiTags', d.ji||[], 'ji-tag');
+
+    // load journal
+    loadJ();
+  }
+
+  function renderTags(id, items, cls){
+    var w = document.getElementById(id);
+    w.innerHTML = '';
+    items.forEach(function(t){
+      var s = document.createElement('span');
+      s.className = 'tg '+cls;
+      s.textContent = t;
+      s.onclick = function(){ this.classList.toggle('checked'); };
+      w.appendChild(s);
+    });
+  }
+
+  // date nav
+  window.changeDate = function(delta){
+    var d = new Date(curDate);
+    d.setDate(d.getDate()+delta);
+    curDate = d.toISOString().split('T')[0];
+    loadFortune();
+  };
+  window.toggleDP = function(){
+    var w = document.getElementById('dpw');
+    var p = document.getElementById('dp');
+    if(w.style.display==='block'){w.style.display='none';}
+    else{p.value=curDate;w.style.display='block';}
+  };
+  window.jumpDate = function(v){
+    if(!v) return;
+    curDate = v;
+    document.getElementById('dpw').style.display='none';
+    loadFortune();
+  };
+  window.goToday = function(){
+    curDate = todayISO;
+    loadFortune();
+  };
+
+  // custom events
+  window.addCE = function(text){
+    var input = document.getElementById('cInput');
+    var val = text||input.value.trim();
+    if(!val) return;
+    customs.push(val);
+    if(!text) input.value = '';
+    renderCE();
+  };
+  function renderCE(){
+    var w = document.getElementById('cTags');
+    w.innerHTML = '';
+    customs.forEach(function(t,i){
+      var s = document.createElement('span');
+      s.className = 'ct';
+      s.innerHTML = t+' <span class="x" onclick="rmCE('+i+')">✕</span>';
+      w.appendChild(s);
+    });
+  }
+  window.rmCE = function(i){ customs.splice(i,1); renderCE(); };
+
+  // mood
+  window.selMood = function(m,btn){
+    mood = m;
+    document.querySelectorAll('.mbtn').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+  };
+
+  // journal - stored in localStorage
+  window.saveJ = function(){
+    var yi=[],ji=[];
+    document.querySelectorAll('#yiTags .yi-tag.checked').forEach(function(e){yi.push(e.textContent);});
+    document.querySelectorAll('#jiTags .ji-tag.checked').forEach(function(e){ji.push(e.textContent);});
+    var note = document.getElementById('noteIn').value.trim();
+    var j = JSON.parse(localStorage.getItem('mystic_journal')||'{}');
+    j[curDate] = {yi:yi, ji:ji, customs:customs.slice(), mood:mood, note:note};
+    localStorage.setItem('mystic_journal', JSON.stringify(j));
+    showToast('已记录 ✓');
+  };
+
+  function loadJ(){
+    // reset
+    customs = []; mood = '';
+    document.getElementById('cTags').innerHTML = '';
+    document.querySelectorAll('.mbtn').forEach(function(b){b.classList.remove('active');});
+    document.getElementById('noteIn').value = '';
+    document.querySelectorAll('.yi-tag.checked,.ji-tag.checked').forEach(function(e){e.classList.remove('checked');});
+
+    var j = JSON.parse(localStorage.getItem('mystic_journal')||'{}');
+    var entry = j[curDate];
+    if(!entry) return;
+    if(entry.yi) entry.yi.forEach(function(t){
+      document.querySelectorAll('#yiTags .yi-tag').forEach(function(e){
+        if(e.textContent===t) e.classList.add('checked');
+      });
+    });
+    if(entry.ji) entry.ji.forEach(function(t){
+      document.querySelectorAll('#jiTags .ji-tag').forEach(function(e){
+        if(e.textContent===t) e.classList.add('checked');
+      });
+    });
+    if(entry.customs){customs=entry.customs;renderCE();}
+    if(entry.mood){
+      mood=entry.mood;
+      document.querySelectorAll('.mbtn').forEach(function(b){
+        if(b.textContent===mood) b.classList.add('active');
+      });
+    }
+    if(entry.note) document.getElementById('noteIn').value = entry.note;
+  }
+
+  function showToast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg;t.classList.add('show');
+    setTimeout(function(){t.classList.remove('show');},1500);
+  }
+})();
+</script>
+</body>
+</html>
