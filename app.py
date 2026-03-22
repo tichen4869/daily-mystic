@@ -594,6 +594,62 @@ def save_stats(stats):
         json.dump(stats, f, ensure_ascii=False, indent=2)
 
 
+JOURNALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "journals.json")
+
+def load_journals():
+    if os.path.exists(JOURNALS_PATH):
+        with open(JOURNALS_PATH) as f:
+            return json.load(f)
+    return {}
+
+def save_journals(data):
+    with open(JOURNALS_PATH, "w") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+@app.route("/api/journal", methods=["GET"])
+def get_journal():
+    """获取某用户某天的记录"""
+    birth = request.args.get("birth", "")
+    date = request.args.get("date", "")
+    if not birth or not date:
+        return jsonify({})
+    journals = load_journals()
+    key = birth + "_" + date
+    return jsonify(journals.get(key, {}))
+
+
+@app.route("/api/journal", methods=["POST"])
+def save_journal():
+    """保存记录"""
+    data = request.get_json()
+    birth = data.get("birth", "")
+    date = data.get("date", "")
+    if not birth or not date:
+        return jsonify({"error": "missing data"}), 400
+    journals = load_journals()
+    key = birth + "_" + date
+    journals[key] = data
+    save_journals(journals)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/journal/all")
+def get_all_journals():
+    """获取某用户所有记录"""
+    birth = request.args.get("birth", "")
+    if not birth:
+        return jsonify({})
+    journals = load_journals()
+    prefix = birth + "_"
+    result = {}
+    for k, v in journals.items():
+        if k.startswith(prefix):
+            date = k[len(prefix):]
+            result[date] = v
+    return jsonify(result)
+
+
 @app.route("/api/ping")
 def api_ping():
     """每次打开页面记录一次访问"""

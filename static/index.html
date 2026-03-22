@@ -927,26 +927,35 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
   // journal - stored in localStorage
   window.saveJ = function(){
+    var b = getCurBirth();
+    if(!b) return;
     var yi=[],ji=[];
     document.querySelectorAll('#yiTags .yi-tag.checked').forEach(function(e){yi.push(e.textContent);});
     document.querySelectorAll('#jiTags .ji-tag.checked').forEach(function(e){ji.push(e.textContent);});
     var note = document.getElementById('noteIn').value.trim();
+    var entry = {birth:b, date:curDate, yi:yi, ji:ji, customs:customs.slice(), mood:mood, note:note};
+    // 存本地
     var j = JSON.parse(localStorage.getItem(journalKey())||'{}');
-    j[curDate] = {yi:yi, ji:ji, customs:customs.slice(), mood:mood, note:note};
+    j[curDate] = entry;
     localStorage.setItem(journalKey(), JSON.stringify(j));
-    showToast('已记录 ✓');
+    // 同步到服务器（跨设备）
+    fetch('/api/journal',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(entry)
+    }).then(function(){ showToast('已记录 ✓'); })
+      .catch(function(){ showToast('已本地记录'); });
   };
 
-  function loadJ(){
-    // reset
+  function resetJournalUI() {
     customs = []; mood = '';
     document.getElementById('cTags').innerHTML = '';
     document.querySelectorAll('.mbtn').forEach(function(b){b.classList.remove('active');});
     document.getElementById('noteIn').value = '';
     document.querySelectorAll('.yi-tag.checked,.ji-tag.checked').forEach(function(e){e.classList.remove('checked');});
+  }
 
-    var j = JSON.parse(localStorage.getItem(journalKey())||'{}');
-    var entry = j[curDate];
+  function applyJournalEntry(entry) {
     if(!entry) return;
     if(entry.yi) entry.yi.forEach(function(t){
       document.querySelectorAll('#yiTags .yi-tag').forEach(function(e){
@@ -966,6 +975,33 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       });
     }
     if(entry.note) document.getElementById('noteIn').value = entry.note;
+  }
+
+  function loadJ(){
+    resetJournalUI();
+
+    // 先从本地加载
+    var j = JSON.parse(localStorage.getItem(journalKey())||'{}');
+    var entry = j[curDate];
+    if(entry) {
+      applyJournalEntry(entry);
+      return;
+    }
+
+    // 本地没有，从服务器拉
+    var b = getCurBirth();
+    if(!b) return;
+    fetch('/api/journal?birth='+encodeURIComponent(b)+'&date='+curDate)
+      .then(function(r){return r.json()})
+      .then(function(data){
+        if(data && data.date) {
+          // 存到本地
+          j[curDate] = data;
+          localStorage.setItem(journalKey(), JSON.stringify(j));
+          resetJournalUI();
+          applyJournalEntry(data);
+        }
+      }).catch(function(){});
   }
 
   function showToast(msg){
@@ -997,6 +1033,27 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   function renderCal() {
     document.getElementById('calMonthLabel').textContent = calYear + '年' + (calMon+1) + '月';
     var journal = JSON.parse(localStorage.getItem(journalKey()) || '{}');
+
+    // 从服务器拉取合并
+    var b = getCurBirth();
+    if(b) {
+      fetch('/api/journal/all?birth='+encodeURIComponent(b))
+        .then(function(r){return r.json()})
+        .then(function(server){
+          var merged = false;
+          for(var k in server) {
+            if(!journal[k]) { journal[k] = server[k]; merged = true; }
+          }
+          if(merged) {
+            localStorage.setItem(journalKey(), JSON.stringify(journal));
+            drawCal(journal);
+          }
+        }).catch(function(){});
+    }
+    drawCal(journal);
+  }
+
+  function drawCal(journal) {
     var now = new Date();
     var todayStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
 

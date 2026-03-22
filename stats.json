@@ -1,5 +1,5 @@
 {
-  "total_visits": 5,
+  "total_visits": 6,
   "unique_users": 1,
   "users": [
     {
@@ -8,7 +8,7 @@
       "first_visit": "2026-03-21 20:00",
       "name": "我",
       "birth": "1995/02/21/21:35",
-      "last_active": "2026-03-21 20:00"
+      "last_active": "2026-03-21 20:18"
     }
   ],
   "visits": []
