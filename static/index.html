@@ -688,7 +688,8 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     if(!b) return;
     var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
     voiceAudio = new Audio(url);
-    voiceAudio.playbackRate = 1.4;
+    voiceAudio.defaultPlaybackRate = 1.5;
+    voiceAudio.playbackRate = 1.5;
     voiceAudio.preload = 'auto';
     voiceAudio.addEventListener('canplaythrough', function(){ voiceReady = true; }, {once:true});
     voiceAudio.load();
@@ -710,6 +711,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   function doPlay() {
     if(!voiceAudio) return;
     voiceAudio.currentTime = 0;
+    voiceAudio.playbackRate = 1.5;
     voiceAudio.play().then(function(){
       var hint = document.getElementById('speakHint');
       if(hint) hint.textContent = '🔊 播报中…';
