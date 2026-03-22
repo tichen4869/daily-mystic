@@ -698,6 +698,8 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   }
 
   function loadFortune(){
+    stopVoice();
+    voiceReady = false;
     var b = getCurBirth();
     if(!b) return;
 
