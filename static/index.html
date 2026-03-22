@@ -195,6 +195,47 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
 /* no-birth state */
 #mainContent{display:none}
+
+/* 手机端放大字体 */
+@media (max-width: 600px) {
+  .ptog{font-size:14px;padding:6px 0}
+  .blabels span{font-size:13px}
+  .bsep{font-size:22px}
+  .brow input{font-size:22px}
+  .bzc{font-size:20px;padding:5px 0}
+  .bzc .bl{font-size:12px}
+  .mrow{font-size:14px;gap:12px}
+  .mrow .ml{font-size:12px}
+  .mtrait{font-size:14px;line-height:1.6}
+  .xt{font-size:13px;padding:3px 9px}
+  .xjg .gl{font-size:12px}
+  .pbtn{font-size:14px;padding:5px 12px}
+  .setup h2{font-size:22px}
+  .setup p{font-size:15px}
+  .dnav .arr{font-size:20px}
+  .dsolar{font-size:15px}
+  .btoday{font-size:13px}
+  .dlunar{font-size:30px;margin:4px 0}
+  .dgz{font-size:14px}
+  .licon{font-size:30px}
+  .lmsg{font-size:18px;line-height:1.7}
+  .ti{font-size:16px}
+  .ti .tl{font-size:12px}
+  .jrow .jl{font-size:12px}
+  .jrow .ji{font-size:14px;padding:4px 12px}
+  .yjt{font-size:14px}
+  .tg{font-size:14px;padding:5px 10px}
+  .thint{font-size:12px}
+  .cer input{font-size:14px;padding:6px 10px}
+  .cer button{width:32px;font-size:16px}
+  .ct{font-size:13px;padding:4px 10px}
+  .modr .ml{font-size:14px}
+  .mbtn{font-size:14px;padding:5px 12px}
+  .nrow textarea{font-size:14px;height:40px;padding:6px 10px}
+  .sbtn{font-size:15px;padding:10px 0}
+  .foot{font-size:13px;padding:8px 0}
+  .card{padding:10px 14px;margin-bottom:8px}
+}
 </style>
 </head>
 <body>
@@ -316,6 +357,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   var todayISO = curDate;
   var mood = '';
   var customs = [];
+  var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
 
   // ─── 基础交互（先定义，确保页面可点击） ───
   window.toggleProfile = function(){
@@ -552,20 +594,43 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   var voiceAudio = null;
   var lastFortuneData = null;
 
-  function playVoice() {
+  // 预加载语音
+  var voiceReady = false;
+  function preloadVoice() {
     var b = getCurBirth();
     if(!b) return;
     var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
-    if(voiceAudio) { voiceAudio.pause(); }
     voiceAudio = new Audio(url);
+    voiceAudio.preload = 'auto';
+    voiceAudio.addEventListener('canplaythrough', function(){ voiceReady = true; }, {once:true});
+    voiceAudio.load();
+  }
+
+  function playVoice() {
+    if(!voiceAudio) {
+      preloadVoice();
+      // 等加载完再播
+      var waitPlay = setInterval(function(){
+        if(voiceReady) { clearInterval(waitPlay); doPlay(); }
+      }, 100);
+      setTimeout(function(){ clearInterval(waitPlay); }, 15000);
+      return;
+    }
+    doPlay();
+  }
+
+  function doPlay() {
+    if(!voiceAudio) return;
+    voiceAudio.currentTime = 0;
     voiceAudio.play().then(function(){
-      document.getElementById('speakHint').textContent = '🔊 播报中…';
+      var hint = document.getElementById('speakHint');
+      if(hint) hint.textContent = '🔊 播报中…';
       voiceAudio.onended = function() {
-        document.getElementById('speakHint').textContent = '🔊 再听一次';
+        if(hint) hint.textContent = '🔊 再听一次';
       };
     }).catch(function(){
-      // iOS 限制，等用户触屏
-      document.getElementById('speakHint').textContent = '🔊 点击播报';
+      var hint = document.getElementById('speakHint');
+      if(hint) hint.textContent = '🔊 点击播报';
     });
   }
 
@@ -574,7 +639,6 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   };
 
   // 桌面端隐藏播报按钮（由 popup.py 自动播报）
-  var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
   if(isLocal) {
     var sr = document.getElementById('speakRow');
     if(sr) sr.style.display = 'none';
@@ -586,8 +650,10 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
     lastFortuneData = d;
 
+    // 预加载语音（页面显示的同时后台下载音频）
+    if(!voiceReady && !isLocal) preloadVoice();
+
     // 自动播报（仅手机端，桌面端由 popup.py 处理）
-    var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
     var spokenKey = 'mystic_spoken_' + curDate;
     if(!isLocal && !localStorage.getItem(spokenKey)) {
       function autoSpeak() {
