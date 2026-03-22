@@ -501,6 +501,66 @@ def api_voice():
     return jsonify({"text": text})
 
 
+@app.route("/api/speak")
+def api_speak():
+    """生成自然语音 MP3"""
+    import asyncio
+    import edge_tts
+    import tempfile
+
+    birth = request.args.get("birth", "")
+    date = request.args.get("date", "")
+
+    try:
+        birth_dt = datetime.strptime(birth, "%Y/%m/%d/%H:%M")
+    except Exception:
+        return "missing birth", 400
+
+    try:
+        target = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
+    except Exception:
+        target = datetime.now()
+
+    daily = get_daily(target)
+    bazi = calc_bazi(birth_dt)
+    analysis = analyze_bazi(bazi)
+    advice = get_advice(bazi, daily, analysis)
+
+    if advice["level"] == "up":
+        opening = "早安呀！今天运势不错哦。"
+        closing = "总之今天很适合行动，加油！"
+    elif advice["level"] == "down":
+        opening = "早安。今天能量稍弱，别着急。"
+        closing = "稳一点就好，明天会更好的。"
+    else:
+        opening = "早安。今天运势平平稳稳的。"
+        closing = "顺其自然就好，祝你今天开心。"
+
+    yi_str = '、'.join(daily['yi'][:3])
+    ji_str = '、'.join(daily['ji'][:3])
+
+    text = (
+        f"{opening}"
+        f"今天是农历{daily['lunar']}，{advice['msg']}。"
+        f"穿搭的话，今天穿{advice['outfit']}会比较旺。"
+        f"财神方位在{daily['caishen']}。"
+        f"适合做的事呢，有{yi_str}。"
+        f"不太建议{ji_str}。"
+        f"{closing}"
+    )
+
+    async def generate():
+        communicate = edge_tts.Communicate(text, "zh-CN-XiaoxiaoNeural", rate="+5%")
+        tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        await communicate.save(tmp.name)
+        return tmp.name
+
+    mp3_path = asyncio.run(generate())
+
+    from flask import send_file
+    return send_file(mp3_path, mimetype="audio/mpeg")
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")

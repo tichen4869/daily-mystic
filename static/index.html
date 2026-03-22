@@ -548,51 +548,29 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     });
   }
 
-  // 语音播报（用浏览器 Web Speech API）
-  var hasSpoken = false;
-  function speakFortune(d) {
-    if(hasSpoken || !d.luck_msg) return;
-    if(!('speechSynthesis' in window)) return;
-    hasSpoken = true;
-
-    var level = d.luck_level || 'neutral';
-    var opening = level==='up' ? '早安呀！今天运势不错哦。'
-      : level==='down' ? '早安。今天能量稍弱，别着急。'
-      : '早安。今天运势平平稳稳的。';
-    var closing = level==='up' ? '总之今天很适合行动，加油！'
-      : level==='down' ? '稳一点就好，明天会更好的。'
-      : '顺其自然就好，祝你今天开心。';
-    var yi = (d.yi||[]).slice(0,3).join('、');
-    var ji = (d.ji||[]).slice(0,3).join('、');
-    var text = opening
-      + '今天是农历' + (d.lunar||'') + '，' + (d.luck_msg||'') + '。'
-      + '穿搭的话，今天穿' + (d.outfit||'') + '会比较旺。'
-      + '财神方位在' + (d.caishen||'') + '。'
-      + '适合做的事呢，有' + yi + '。'
-      + '不太建议' + ji + '。'
-      + closing;
-
-    var u = new SpeechSynthesisUtterance(text);
-    u.lang = 'zh-CN';
-    u.rate = 0.95;
-    u.pitch = 1.05;
-    // 找中文语音
-    var voices = speechSynthesis.getVoices();
-    for(var i = 0; i < voices.length; i++) {
-      if(voices[i].lang.startsWith('zh')) { u.voice = voices[i]; break; }
-    }
-    speechSynthesis.speak(u);
-  }
-
+  // 语音播报（用 edge-tts 生成的自然语音）
+  var voiceAudio = null;
   var lastFortuneData = null;
 
-  window.manualSpeak = function() {
-    if(lastFortuneData) {
-      hasSpoken = false;
-      speakFortune(lastFortuneData);
+  function playVoice() {
+    var b = getCurBirth();
+    if(!b) return;
+    var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
+    if(voiceAudio) { voiceAudio.pause(); }
+    voiceAudio = new Audio(url);
+    voiceAudio.play().then(function(){
       document.getElementById('speakHint').textContent = '🔊 播报中…';
-      setTimeout(function(){ document.getElementById('speakHint').textContent = '🔊 点击播报'; }, 8000);
-    }
+      voiceAudio.onended = function() {
+        document.getElementById('speakHint').textContent = '🔊 再听一次';
+      };
+    }).catch(function(){
+      // iOS 限制，等用户触屏
+      document.getElementById('speakHint').textContent = '🔊 点击播报';
+    });
+  }
+
+  window.manualSpeak = function() {
+    playVoice();
   };
 
   function renderFortune(d){
@@ -601,15 +579,17 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
     lastFortuneData = d;
 
-    // 自动播报：监听第一次触屏/点击后自动播报（绕过 iOS 限制）
+    // 自动播报：触屏后立即播放（iOS 要求至少一次交互）
     var spokenKey = 'mystic_spoken_' + curDate;
     if(!localStorage.getItem(spokenKey)) {
+      // 先尝试直接播放
+      var tryAuto = setTimeout(function(){ playVoice(); }, 300);
+
+      // 如果被拦截，等用户触屏
       function autoSpeak() {
+        clearTimeout(tryAuto);
         localStorage.setItem(spokenKey, '1');
-        hasSpoken = false;
-        speakFortune(d);
-        document.getElementById('speakHint').textContent = '🔊 播报中…';
-        setTimeout(function(){ document.getElementById('speakHint').textContent = '🔊 点击播报'; }, 8000);
+        playVoice();
         document.removeEventListener('touchstart', autoSpeak);
         document.removeEventListener('click', autoSpeak);
       }
