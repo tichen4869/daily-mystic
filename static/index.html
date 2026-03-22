@@ -775,8 +775,18 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     }
   }
 
+  // 桌面端用微软语音（通过服务器 edge-tts）
+  var desktopAudio = null;
+  function playDesktopVoice() {
+    var b = getCurBirth();
+    if(!b) return;
+    var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
+    desktopAudio = new Audio(url);
+    desktopAudio.play().catch(function(){});
+  }
+
   window.manualSpeak = function() {
-    playVoice();
+    if(isDesktop) { playDesktopVoice(); } else { playVoice(); }
   };
 
   // 桌面端隐藏播报按钮
@@ -797,9 +807,9 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     var spokenKey = 'mystic_spoken_' + curDate;
     if(!localStorage.getItem(spokenKey)) {
       if(isDesktop) {
-        // 桌面端：运势加载完直接播报（webview 没有 autoplay 限制）
+        // 桌面端：用服务器生成的微软语音
         localStorage.setItem(spokenKey, '1');
-        setTimeout(function(){ playVoice(); }, 500);
+        setTimeout(function(){ playDesktopVoice(); }, 500);
       } else {
         // 手机端：等触屏后播报
         function autoSpeak() {
@@ -1171,6 +1181,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   // 退出/切后台时停止语音
   function stopVoice() {
     if('speechSynthesis' in window) speechSynthesis.cancel();
+    if(desktopAudio) try { desktopAudio.pause(); desktopAudio.currentTime=0; } catch(e) {}
     if(audioSource) try { audioSource.stop(); } catch(e) {}
     if(audioCtx) try { audioCtx.suspend(); } catch(e) {}
     var hint = document.getElementById('speakHint');
