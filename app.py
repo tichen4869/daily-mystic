@@ -671,14 +671,6 @@ def service_worker():
     return app.send_static_file("sw.js")
 
 
-@app.route("/api/config")
-def api_config():
-    """读取本地 config.json 作为默认生辰（方便旧用户迁移）"""
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
-    if os.path.exists(config_path):
-        with open(config_path) as f:
-            return jsonify(json.load(f))
-    return jsonify({})
 
 
 if __name__ == "__main__":

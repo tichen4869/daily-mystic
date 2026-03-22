@@ -565,23 +565,8 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       fillBirth(birth);
       loadFortune();
     } else {
-      // 尝试从本地 config.json 迁移
-      fetch('/api/config').then(function(r){return r.json()}).then(function(d){
-        if(d.birth && persons.length === 0) {
-          persons.push({name:"我", birth: d.birth});
-          curPersonIdx = 0;
-          savePersons();
-          renderPersons();
-          fillBirth(d.birth);
-          loadFortune();
-        } else {
-          document.getElementById('profSec').classList.add('show');
-          document.getElementById('ptog').classList.add('open');
-        }
-      }).catch(function(){
-        document.getElementById('profSec').classList.add('show');
-        document.getElementById('ptog').classList.add('open');
-      });
+      document.getElementById('profSec').classList.add('show');
+      document.getElementById('ptog').classList.add('open');
     }
   }
   init();
