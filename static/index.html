@@ -617,12 +617,25 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     document.getElementById('bmi').value = hm[1]||'';
   }
 
-  // 自动跳格
+  // 自动跳格 + 退格回跳
   ['by','bm','bd','bh','bmi'].forEach(function(id, idx, arr){
-    document.getElementById(id).addEventListener('input', function(){
+    var el = document.getElementById(id);
+    // 输满跳下一格
+    el.addEventListener('input', function(){
       if(idx < arr.length - 1 && this.value.length >= parseInt(this.maxLength)){
         var next = document.getElementById(arr[idx+1]);
         next.focus(); next.select();
+      }
+    });
+    // Backspace 空了跳上一格
+    el.addEventListener('keydown', function(e){
+      if(e.key === 'Backspace' && this.value === '' && idx > 0){
+        e.preventDefault();
+        var prev = document.getElementById(arr[idx-1]);
+        prev.focus();
+        // 光标移到末尾
+        var len = prev.value.length;
+        prev.setSelectionRange(len, len);
       }
     });
   });
