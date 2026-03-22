@@ -76,13 +76,16 @@ def main():
     import threading
     threading.Timer(2.0, speak_fortune).start()
 
-    webview.create_window(
+    window = webview.create_window(
         "每日玄学",
         URL,
         width=440,
         height=780,
         resizable=True,
         min_size=(360, 600),
+        x=0,
+        y=0,
+        on_top=True,
     )
     webview.start()
 

@@ -287,14 +287,21 @@ def get_daily(target):
     a = cnlunar.Lunar(target, godType="8char")
     gz = day_ganzhi_from_date(target)
     wx = GAN_WUXING[gz[0]]
-    yi = translate(a.goodThing[:6]) if a.goodThing else ["诸事不宜"]
-    ji = translate(a.badThing[:6]) if a.badThing else ["百无禁忌"]
-    jishi = get_lucky_hours(a)  # 默认不排序，API层会重新排
+    yi_raw = translate(a.goodThing[:8]) if a.goodThing else ["诸事不宜"]
+    ji_raw = translate(a.badThing[:8]) if a.badThing else ["百无禁忌"]
+
+    # 去重（翻译后意思相同的只保留一个）
+    yi = list(dict.fromkeys(yi_raw))[:6]
+    ji = list(dict.fromkeys(ji_raw))[:6]
+
+    conflict = list(set(yi) & set(ji))
+    jishi = get_lucky_hours(a)
     return {
         "lunar": f"{a.lunarMonthCn}{a.lunarDayCn}",
         "gz": gz, "wx": wx,
         "yi": yi, "ji": ji, "jishi": jishi,
         "caishen": CAISHEN_MAP.get(gz[0], "南方"),
+        "conflict": conflict,
     }
 
 def get_advice(bazi, daily, analysis):
@@ -357,6 +364,30 @@ def api_fortune():
         bazi = calc_bazi(birth_dt)
         analysis = analyze_bazi(bazi)
         advice = get_advice(bazi, daily, analysis)
+
+        # 根据八字解决宜忌冲突
+        if daily["conflict"]:
+            day_wx = daily["wx"]
+            xi = analysis["xi"]
+            ji_wx = analysis["ji"]
+            for item in daily["conflict"]:
+                # 当日五行合喜用 → 这件事今天对你有利 → 留在宜
+                # 当日五行合忌神 → 这件事今天对你不利 → 留在忌
+                if day_wx in xi:
+                    result["ji"] = [x for x in result["ji"] if x != item]
+                elif day_wx in ji_wx:
+                    result["yi"] = [x for x in result["yi"] if x != item]
+                else:
+                    # 中性日：看这件事本身偏动还是偏静
+                    # 偏动的事（出行、交易、开业等）在中性日归宜
+                    active_words = ["出门", "旅行", "交易", "买卖", "开业", "开张", "搬家",
+                                    "结婚", "签合同", "入职", "聚会", "社交"]
+                    is_active = any(w in item for w in active_words)
+                    if is_active:
+                        result["ji"] = [x for x in result["ji"] if x != item]
+                    else:
+                        result["yi"] = [x for x in result["yi"] if x != item]
+
         # 重新按喜用神排序吉时
         a = cnlunar.Lunar(target, godType="8char")
         result["jishi"] = get_lucky_hours(a, analysis["xi"])
