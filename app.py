@@ -257,8 +257,41 @@ def analyze_bazi(bazi):
         "xi": [xi, yong], "ji": ji,
     }
 
+# 近义词合并（保留前面的）
+SYNONYMS = {
+    "做慈善": "做善事",
+    "做好事": "做善事",
+    "施恩、做善事": "做善事",
+    "结婚": "结婚",
+    "结婚姻": "结婚",
+    "搬家入住": "搬家",
+    "搬家": "搬家",
+    "看病、体检": "看病",
+    "看病": "看病",
+    "做法事": "祈祷",
+    "做法事、祈祷": "祈祷",
+    "装修房屋": "装修",
+    "装修": "装修",
+    "破土动工": "动工挖地",
+    "动工挖地": "动工挖地",
+    "学习新技能": "学习进修",
+    "学习、进修": "学习进修",
+    "入学、报名": "学习进修",
+    "提亲、订婚": "订婚",
+    "合八字": "订婚",
+}
+
 def translate(items):
-    return [YI_JI_TRANSLATE.get(x, x) for x in items]
+    result = []
+    seen = set()
+    for x in items:
+        modern = YI_JI_TRANSLATE.get(x, x)
+        # 合并近义词
+        canonical = SYNONYMS.get(modern, modern)
+        if canonical not in seen:
+            seen.add(canonical)
+            result.append(canonical)
+    return result
 
 SHICHEN_NAMES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
 
