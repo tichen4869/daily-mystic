@@ -257,9 +257,12 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       <div class="dgz" id="dgz"></div>
     </div>
 
-    <div class="card lcard neutral" id="lcard">
+    <div class="card lcard neutral" id="lcard" onclick="manualSpeak()">
       <span class="licon" id="licon">😐</span>
       <span class="lmsg" id="lmsg"></span>
+      <div style="text-align:center;margin-top:4px">
+        <span id="speakHint" style="font-size:10px;color:#9B8B7A;cursor:pointer">🔊 点击播报</span>
+      </div>
     </div>
 
     <div class="card">
@@ -571,21 +574,22 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     speechSynthesis.speak(u);
   }
 
-  // 语音列表可能异步加载
-  if('speechSynthesis' in window) {
-    speechSynthesis.onvoiceschanged = function() {};
-  }
+  var lastFortuneData = null;
+
+  window.manualSpeak = function() {
+    if(lastFortuneData) {
+      hasSpoken = false;
+      speakFortune(lastFortuneData);
+      document.getElementById('speakHint').textContent = '🔊 播报中…';
+      setTimeout(function(){ document.getElementById('speakHint').textContent = '🔊 点击播报'; }, 8000);
+    }
+  };
 
   function renderFortune(d){
     document.getElementById('setupCard').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
 
-    // 自动语音播报（每天第一次打开时）
-    var spokenKey = 'mystic_spoken_' + curDate;
-    if(!localStorage.getItem(spokenKey)) {
-      localStorage.setItem(spokenKey, '1');
-      setTimeout(function(){ speakFortune(d); }, 500);
-    }
+    lastFortuneData = d;
 
     // particles color
     if(d.particle_color){
