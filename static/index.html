@@ -767,56 +767,38 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       + closing;
   }
 
-  // 统一用微软语音（自然），预加载减少延迟
+  // 语音播报（本地 TTS，零延迟）
   var voiceAudio = null;
   var voiceReady = false;
 
-  function preloadVoice() {
-    var b = getCurBirth();
-    if(!b) return;
-    voiceReady = false;
-    var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
-    voiceAudio = new Audio(url);
-    voiceAudio.preload = 'auto';
-    voiceAudio.addEventListener('canplaythrough', function(){ voiceReady = true; }, {once:true});
-    voiceAudio.load();
-  }
+  function preloadVoice() {}
 
   function playVoice() {
-    if(voiceReady && voiceAudio) {
-      doPlayAudio();
-    } else {
-      // 还没加载好，用本地 TTS 先顶上
-      if(!lastFortuneData) return;
-      var text = buildSpeechText(lastFortuneData);
-      if(!text) return;
-      stopVoice();
-      if('speechSynthesis' in window) {
-        speechUtter = new SpeechSynthesisUtterance(text);
-        speechUtter.lang = 'zh-CN';
-        speechUtter.rate = 1.0;
-        var hint = document.getElementById('speakHint');
-        if(hint) hint.textContent = '🔊 播报中…';
-        speechUtter.onend = function() { if(hint) hint.textContent = '🔊 再听一次'; };
-        speechSynthesis.speak(speechUtter);
+    if(!lastFortuneData) return;
+    var text = buildSpeechText(lastFortuneData);
+    if(!text) return;
+    stopVoice();
+    if(!('speechSynthesis' in window)) return;
+    speechUtter = new SpeechSynthesisUtterance(text);
+    speechUtter.lang = 'zh-CN';
+    speechUtter.rate = 1.05;
+    speechUtter.pitch = 1.0;
+    // 选最好的中文语音
+    var voices = speechSynthesis.getVoices();
+    var best = null;
+    for(var i = 0; i < voices.length; i++) {
+      if(voices[i].lang && voices[i].lang.startsWith('zh-CN')) {
+        if(!best || voices[i].localService) best = voices[i];
       }
     }
+    if(best) speechUtter.voice = best;
+    var hint = document.getElementById('speakHint');
+    if(hint) hint.textContent = '🔊 播报中…';
+    speechUtter.onend = function() { if(hint) hint.textContent = '🔊 再听一次'; };
+    speechSynthesis.speak(speechUtter);
   }
 
-  function doPlayAudio() {
-    if(!voiceAudio) return;
-    stopVoice();
-    voiceAudio.currentTime = 0;
-    voiceAudio.play().then(function(){
-      var hint = document.getElementById('speakHint');
-      if(hint) hint.textContent = '🔊 播报中…';
-      voiceAudio.onended = function() { if(hint) hint.textContent = '🔊 再听一次'; };
-    }).catch(function(){});
-  }
-
-  window.manualSpeak = function() {
-    if(voiceReady && voiceAudio) { doPlayAudio(); } else { playVoice(); }
-  };
+  window.manualSpeak = function() { playVoice(); };
 
   // 桌面端隐藏播报按钮
   if(isDesktop) {
@@ -838,7 +820,14 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       if(isDesktop) {
         // 桌面端：用服务器生成的微软语音
         localStorage.setItem(spokenKey, '1');
-        setTimeout(function(){ doPlayAudio(); }, 500);
+        setTimeout(function(){
+          var b = getCurBirth();
+          if(!b) return;
+          var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
+          var a = new Audio(url);
+          a.play().catch(function(){});
+          voiceAudio = a;
+        }, 500);
       } else {
         // 手机端：等触屏后播报
         function autoSpeak() {
