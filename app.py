@@ -596,6 +596,57 @@ def save_stats(stats):
 
 JOURNALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "journals.json")
 
+# GitHub 同步配置
+import hashlib
+import urllib.request
+import urllib.parse
+import base64
+
+GH_TOKEN = os.environ.get("GH_TOKEN", "")
+GH_REPO = "tichen4869/mystic-data"
+
+def birth_hash(birth):
+    """生辰哈希，不明文存储"""
+    return hashlib.sha256(birth.encode()).hexdigest()[:16]
+
+def gh_read(file_path):
+    """从 GitHub 读取文件"""
+    if not GH_TOKEN:
+        return None, None
+    url = f"https://api.github.com/repos/{GH_REPO}/contents/{file_path}"
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"token {GH_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            data = json.loads(r.read())
+            content = base64.b64decode(data["content"]).decode()
+            return json.loads(content), data["sha"]
+    except Exception:
+        return None, None
+
+def gh_write(file_path, content, sha=None):
+    """写入 GitHub 文件"""
+    if not GH_TOKEN:
+        return False
+    url = f"https://api.github.com/repos/{GH_REPO}/contents/{file_path}"
+    encoded = base64.b64encode(json.dumps(content, ensure_ascii=False).encode()).decode()
+    body = {"message": "sync", "content": encoded}
+    if sha:
+        body["sha"] = sha
+    data = json.dumps(body).encode()
+    req = urllib.request.Request(url, data=data, method="PUT", headers={
+        "Authorization": f"token {GH_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+    })
+    try:
+        urllib.request.urlopen(req, timeout=10)
+        return True
+    except Exception:
+        return False
+
 def load_journals():
     if os.path.exists(JOURNALS_PATH):
         with open(JOURNALS_PATH) as f:
@@ -614,32 +665,53 @@ def get_journal():
     date = request.args.get("date", "")
     if not birth or not date:
         return jsonify({})
+    # 本地
     journals = load_journals()
     key = birth + "_" + date
-    return jsonify(journals.get(key, {}))
+    entry = journals.get(key)
+    if entry:
+        return jsonify(entry)
+    # GitHub
+    bh = birth_hash(birth)
+    gh_data, _ = gh_read(f"users/{bh}/journal.json")
+    if gh_data and date in gh_data:
+        return jsonify(gh_data[date])
+    return jsonify({})
 
 
 @app.route("/api/journal", methods=["POST"])
 def save_journal():
-    """保存记录"""
+    """保存记录（本地 + GitHub 双写）"""
     data = request.get_json()
     birth = data.get("birth", "")
     date = data.get("date", "")
     if not birth or not date:
         return jsonify({"error": "missing data"}), 400
+    # 本地
     journals = load_journals()
     key = birth + "_" + date
     journals[key] = data
     save_journals(journals)
+    # GitHub 同步（后台）
+    import threading
+    def sync():
+        bh = birth_hash(birth)
+        gh_data, sha = gh_read(f"users/{bh}/journal.json")
+        if gh_data is None:
+            gh_data = {}
+        gh_data[date] = data
+        gh_write(f"users/{bh}/journal.json", gh_data, sha)
+    threading.Thread(target=sync, daemon=True).start()
     return jsonify({"ok": True})
 
 
 @app.route("/api/journal/all")
 def get_all_journals():
-    """获取某用户所有记录"""
+    """获取某用户所有记录（合并本地 + GitHub）"""
     birth = request.args.get("birth", "")
     if not birth:
         return jsonify({})
+    # 本地
     journals = load_journals()
     prefix = birth + "_"
     result = {}
@@ -647,6 +719,13 @@ def get_all_journals():
         if k.startswith(prefix):
             date = k[len(prefix):]
             result[date] = v
+    # GitHub 合并
+    bh = birth_hash(birth)
+    gh_data, _ = gh_read(f"users/{bh}/journal.json")
+    if gh_data:
+        for date, entry in gh_data.items():
+            if date not in result:
+                result[date] = entry
     return jsonify(result)
 
 

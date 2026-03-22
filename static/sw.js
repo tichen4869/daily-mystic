@@ -1,4 +1,4 @@
-var CACHE = 'mystic-v5';
+var CACHE = 'mystic-v6';
 var PRECACHE = ['/', '/static/index.html'];
 
 self.addEventListener('install', function(e) {
