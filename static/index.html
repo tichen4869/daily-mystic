@@ -61,6 +61,11 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 .blabels .bly{width:56px;text-align:center}
 .blabels .blm,.blabels .bld,.blabels .blh,.blabels .blmi{width:34px;text-align:center}
 .blabels .bls{width:14px}
+.birth-wrap{position:relative}
+.eye-btn{position:absolute;right:0;top:4px;border:none;background:none;
+  font-size:16px;color:#C9B99A;cursor:pointer;padding:2px 4px;transition:color .2s}
+.eye-btn:hover{color:#C4956A}
+.birth-wrap.masked .blabels,.birth-wrap.masked .brow{filter:blur(6px);pointer-events:none;user-select:none}
 .brow{display:flex;align-items:baseline;justify-content:center;margin-bottom:8px}
 .bsep{font-size:18px;color:#C4956A;padding:0 1px;font-weight:300}
 .brow input{border:none;border-bottom:1.5px solid #D4C8B0;background:transparent;
@@ -310,23 +315,26 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   <div class="prof" id="profSec">
     <div class="card" onclick="handleProfClick(event)">
       <div class="persons" id="personList"></div>
-      <div class="blabels">
-        <span class="bly">年</span><span class="bls"></span>
-        <span class="blm">月</span><span class="bls"></span>
-        <span class="bld">日</span><span class="bls"></span>
-        <span class="blh">时</span><span class="bls"></span>
-        <span class="blmi">分</span>
-      </div>
-      <div class="brow">
-        <input type="text" class="yr" id="by" placeholder="YYYY" maxlength="4" onblur="birthBlur()">
-        <span class="bsep">/</span>
-        <input type="text" class="md" id="bm" placeholder="MM" maxlength="2" onblur="birthBlur()">
-        <span class="bsep">/</span>
-        <input type="text" class="md" id="bd" placeholder="DD" maxlength="2" onblur="birthBlur()">
-        <span class="bsep">/</span>
-        <input type="text" class="hm" id="bh" placeholder="HH" maxlength="2" onblur="birthBlur()">
-        <span class="bsep">:</span>
-        <input type="text" class="hm" id="bmi" placeholder="MM" maxlength="2" onblur="birthBlur()">
+      <div class="birth-wrap masked" id="birthWrap">
+        <button class="eye-btn" id="eyeBtn" onclick="event.stopPropagation();toggleEye()">🙈</button>
+        <div class="blabels">
+          <span class="bly">年</span><span class="bls"></span>
+          <span class="blm">月</span><span class="bls"></span>
+          <span class="bld">日</span><span class="bls"></span>
+          <span class="blh">时</span><span class="bls"></span>
+          <span class="blmi">分</span>
+        </div>
+        <div class="brow">
+          <input type="text" class="yr" id="by" placeholder="YYYY" maxlength="4" onblur="birthBlur()">
+          <span class="bsep">/</span>
+          <input type="text" class="md" id="bm" placeholder="MM" maxlength="2" onblur="birthBlur()">
+          <span class="bsep">/</span>
+          <input type="text" class="md" id="bd" placeholder="DD" maxlength="2" onblur="birthBlur()">
+          <span class="bsep">/</span>
+          <input type="text" class="hm" id="bh" placeholder="HH" maxlength="2" onblur="birthBlur()">
+          <span class="bsep">:</span>
+          <input type="text" class="hm" id="bmi" placeholder="MM" maxlength="2" onblur="birthBlur()">
+        </div>
       </div>
       <div id="baziInfo"></div>
     </div>
@@ -462,6 +470,13 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     }
   };
 
+  window.toggleEye = function() {
+    var wrap = document.getElementById('birthWrap');
+    var btn = document.getElementById('eyeBtn');
+    wrap.classList.toggle('masked');
+    btn.textContent = wrap.classList.contains('masked') ? '🙈' : '🐵';
+  };
+
   // ─── 多人管理 ───
   // persons: [{name:"我", birth:"1994/04/21/03:14"}, ...]
   var persons = JSON.parse(localStorage.getItem('mystic_persons') || '[]');
@@ -567,6 +582,9 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     } else {
       document.getElementById('profSec').classList.add('show');
       document.getElementById('ptog').classList.add('open');
+      // 新用户需要输入，取消遮罩
+      document.getElementById('birthWrap').classList.remove('masked');
+      document.getElementById('eyeBtn').textContent = '🐵';
     }
   }
   init();
