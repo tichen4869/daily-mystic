@@ -591,6 +591,22 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
     lastFortuneData = d;
 
+    // 自动播报：监听第一次触屏/点击后自动播报（绕过 iOS 限制）
+    var spokenKey = 'mystic_spoken_' + curDate;
+    if(!localStorage.getItem(spokenKey)) {
+      function autoSpeak() {
+        localStorage.setItem(spokenKey, '1');
+        hasSpoken = false;
+        speakFortune(d);
+        document.getElementById('speakHint').textContent = '🔊 播报中…';
+        setTimeout(function(){ document.getElementById('speakHint').textContent = '🔊 点击播报'; }, 8000);
+        document.removeEventListener('touchstart', autoSpeak);
+        document.removeEventListener('click', autoSpeak);
+      }
+      document.addEventListener('touchstart', autoSpeak, {once:true});
+      document.addEventListener('click', autoSpeak, {once:true});
+    }
+
     // particles color
     if(d.particle_color){
       document.documentElement.style.setProperty('--particle', d.particle_color);
