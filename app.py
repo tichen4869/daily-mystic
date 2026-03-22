@@ -39,6 +39,23 @@ CAISHEN_MAP = {
     "壬": "南方", "癸": "东南",
 }
 
+# 事项对应的五行属性（用于个性化宜忌）
+THING_WUXING = {
+    "祭拜祖先": "火", "许愿求福": "火", "备孕求子": "水",
+    "饰品开光": "金", "画画手工": "木", "洗澡SPA": "水",
+    "出门旅行": "木", "结婚": "火", "买衣做衣": "金",
+    "搬床换床": "土", "开业开张": "金", "签合同": "金",
+    "买卖交易": "金", "收钱理财": "金", "搬家": "土",
+    "装修": "土", "动工挖地": "土", "提亲订婚": "火",
+    "打扫清理": "水", "学习进修": "木", "买宠物": "木",
+    "修墙装修": "土", "整理环境": "土", "种花种菜": "木",
+    "钓鱼": "水", "聚会社交": "火", "做善事": "火",
+    "看病体检": "水", "美容护肤": "水", "理发": "金",
+    "聚餐": "火", "穿戴打扮": "金", "户外冒险": "木",
+    "社交拓展": "火", "打扫房间": "水", "买房买地": "土",
+    "做慈善": "火", "酿酒策划": "水", "装修厨房": "火",
+}
+
 SHICHEN_TIME = {
     "子": "23:00-01:00", "丑": "01:00-03:00", "寅": "03:00-05:00",
     "卯": "05:00-07:00", "辰": "07:00-09:00", "巳": "09:00-11:00",
@@ -397,6 +414,27 @@ def api_fortune():
         bazi = calc_bazi(birth_dt)
         analysis = analyze_bazi(bazi)
         advice = get_advice(bazi, daily, analysis)
+
+        # 根据用户八字个性化宜忌排序
+        xi_list = analysis["xi"]
+        ji_list = analysis["ji"]
+
+        def thing_score(item, is_yi):
+            """根据事项五行与用户喜忌的匹配度打分"""
+            wx = THING_WUXING.get(item, "")
+            if not wx:
+                return 0
+            if wx in xi_list:
+                return 2 if is_yi else -1  # 喜用神的事，宜里排前面，忌里降权
+            if wx in ji_list:
+                return -1 if is_yi else 2  # 忌神的事，宜里降权，忌里排前面
+            return 0
+
+        # 重新排序：与用户喜用神相关的排前面
+        yi_sorted = sorted(result["yi"], key=lambda x: -thing_score(x, True))
+        ji_sorted = sorted(result["ji"], key=lambda x: -thing_score(x, False))
+        result["yi"] = yi_sorted
+        result["ji"] = ji_sorted
 
         # 根据八字解决宜忌冲突
         if daily["conflict"]:
