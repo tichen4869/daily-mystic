@@ -1208,6 +1208,30 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   window.addEventListener('beforeunload', stopVoice);
   window.addEventListener('blur', function() { setTimeout(function(){ if(document.hidden) stopVoice(); }, 100); });
 
+  // 手机端左右滑动切换日期
+  var touchStartX = 0;
+  var touchEndX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  }, {passive:true});
+  document.addEventListener('touchend', function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    var diff = touchEndX - touchStartX;
+    if(Math.abs(diff) > 80) {
+      if(diff > 0) changeDate(-1);  // 右滑 = 前一天
+      else changeDate(1);           // 左滑 = 后一天
+    }
+  }, {passive:true});
+
+  // 桌面端键盘左右箭头切换日期
+  document.addEventListener('keydown', function(e) {
+    // 不在输入框时才响应
+    var tag = document.activeElement.tagName;
+    if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if(e.key === 'ArrowLeft') changeDate(-1);
+    if(e.key === 'ArrowRight') changeDate(1);
+  });
+
   // 记录访问量
   fetch('/api/ping').catch(function(){});
 
