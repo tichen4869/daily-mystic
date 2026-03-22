@@ -718,61 +718,61 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   var voiceAudio = null;
   var lastFortuneData = null;
 
-  // 语音播放（Web Audio API，退出时系统自动停止）
+  // 语音播放
   var audioCtx = null;
   var audioSource = null;
-  var voiceBuffer = null;
+  var speechUtter = null;
 
   function preloadVoice() {
-    var b = getCurBirth();
-    if(!b) return;
-    var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
-    fetch(url).then(function(r){ return r.arrayBuffer(); }).then(function(buf){
-      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      return audioCtx.decodeAudioData(buf);
-    }).then(function(decoded){
-      voiceBuffer = decoded;
-    }).catch(function(){});
+    // 不需要预加载，用本地 TTS 秒播
+  }
+
+  function buildSpeechText(d) {
+    if(!d || !d.luck_msg) return '';
+    var level = d.luck_level || 'neutral';
+    var opening = level==='up' ? '早安呀！今天运势不错哦。'
+      : level==='down' ? '早安。今天能量稍弱，别着急。'
+      : '早安。今天运势平平稳稳的。';
+    var closing = level==='up' ? '总之今天很适合行动，加油！'
+      : level==='down' ? '稳一点就好，明天会更好的。'
+      : '顺其自然就好，祝你今天开心。';
+    var yi = (d.yi||[]).slice(0,3).join('、');
+    var ji = (d.ji||[]).slice(0,3).join('、');
+    return opening
+      + '今天是农历' + (d.lunar||'') + '，' + (d.luck_msg||'') + '。'
+      + '穿搭的话，今天穿' + (d.outfit||'') + '会比较旺。'
+      + '财神方位在' + (d.caishen||'') + '。'
+      + '适合做的事呢，有' + yi + '。'
+      + '不太建议' + ji + '。'
+      + closing;
   }
 
   function playVoice() {
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if(!lastFortuneData) return;
+    var text = buildSpeechText(lastFortuneData);
+    if(!text) return;
 
-    if(!voiceBuffer) {
-      // 还没加载好，现场加载
-      var b = getCurBirth();
-      if(!b) return;
-      var hint = document.getElementById('speakHint');
-      if(hint) hint.textContent = '🔊 加载中…';
-      var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
-      fetch(url).then(function(r){ return r.arrayBuffer(); }).then(function(buf){
-        return audioCtx.decodeAudioData(buf);
-      }).then(function(decoded){
-        voiceBuffer = decoded;
-        doPlay();
-      }).catch(function(){
-        if(hint) hint.textContent = '🔊 加载失败';
-      });
-      return;
-    }
-    doPlay();
-  }
-
-  function doPlay() {
-    if(!voiceBuffer || !audioCtx) return;
     // 停掉之前的
-    if(audioSource) try { audioSource.stop(); } catch(e) {}
-    audioSource = audioCtx.createBufferSource();
-    audioSource.buffer = voiceBuffer;
-    audioSource.playbackRate.value = 1.5;
-    audioSource.connect(audioCtx.destination);
-    audioSource.start(0);
-    var hint = document.getElementById('speakHint');
-    if(hint) hint.textContent = '🔊 播报中…';
-    audioSource.onended = function() {
-      if(hint) hint.textContent = '🔊 再听一次';
-    };
+    stopVoice();
+
+    if('speechSynthesis' in window) {
+      speechUtter = new SpeechSynthesisUtterance(text);
+      speechUtter.lang = 'zh-CN';
+      speechUtter.rate = 1.2;
+      speechUtter.pitch = 1.05;
+      var voices = speechSynthesis.getVoices();
+      for(var i = 0; i < voices.length; i++) {
+        if(voices[i].lang && voices[i].lang.startsWith('zh')) {
+          speechUtter.voice = voices[i]; break;
+        }
+      }
+      var hint = document.getElementById('speakHint');
+      if(hint) hint.textContent = '🔊 播报中…';
+      speechUtter.onend = function() {
+        if(hint) hint.textContent = '🔊 再听一次';
+      };
+      speechSynthesis.speak(speechUtter);
+    }
   }
 
   window.manualSpeak = function() {
@@ -1170,6 +1170,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
   // 退出/切后台时停止语音
   function stopVoice() {
+    if('speechSynthesis' in window) speechSynthesis.cancel();
     if(audioSource) try { audioSource.stop(); } catch(e) {}
     if(audioCtx) try { audioCtx.suspend(); } catch(e) {}
     var hint = document.getElementById('speakHint');
