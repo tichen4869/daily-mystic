@@ -1052,6 +1052,15 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     loadFortune();
   };
 
+  // 退出/切后台时停止语音
+  document.addEventListener('visibilitychange', function() {
+    if(document.hidden && voiceAudio) {
+      voiceAudio.pause();
+      var hint = document.getElementById('speakHint');
+      if(hint) hint.textContent = '🔊 点击播报';
+    }
+  });
+
 // 注册 Service Worker
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/static/sw.js').catch(function(){});
