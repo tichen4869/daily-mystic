@@ -834,6 +834,29 @@ def api_stats():
     })
 
 
+@app.route("/api/local-birth")
+def api_local_birth():
+    """桌面端读取本地保存的生辰"""
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
+    if os.path.exists(config_path):
+        with open(config_path) as f:
+            return jsonify(json.load(f))
+    return jsonify({})
+
+
+@app.route("/api/local-birth", methods=["POST"])
+def save_local_birth():
+    """桌面端保存生辰到本地文件"""
+    data = request.get_json()
+    birth = data.get("birth", "")
+    if not birth:
+        return jsonify({"error": "missing birth"}), 400
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
+    with open(config_path, "w") as f:
+        json.dump({"birth": birth}, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True})
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")

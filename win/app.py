@@ -39,6 +39,23 @@ CAISHEN_MAP = {
     "壬": "南方", "癸": "东南",
 }
 
+# 事项对应的五行属性（用于个性化宜忌）
+THING_WUXING = {
+    "祭拜祖先": "火", "许愿求福": "火", "备孕求子": "水",
+    "饰品开光": "金", "画画手工": "木", "洗澡SPA": "水",
+    "出门旅行": "木", "结婚": "火", "买衣做衣": "金",
+    "搬床换床": "土", "开业开张": "金", "签合同": "金",
+    "买卖交易": "金", "收钱理财": "金", "搬家": "土",
+    "装修": "土", "动工挖地": "土", "提亲订婚": "火",
+    "打扫清理": "水", "学习进修": "木", "买宠物": "木",
+    "修墙装修": "土", "整理环境": "土", "种花种菜": "木",
+    "钓鱼": "水", "聚会社交": "火", "做善事": "火",
+    "看病体检": "水", "美容护肤": "水", "理发": "金",
+    "聚餐": "火", "穿戴打扮": "金", "户外冒险": "木",
+    "社交拓展": "火", "打扫房间": "水", "买房买地": "土",
+    "做慈善": "火", "酿酒策划": "水", "装修厨房": "火",
+}
+
 SHICHEN_TIME = {
     "子": "23:00-01:00", "丑": "01:00-03:00", "寅": "03:00-05:00",
     "卯": "05:00-07:00", "辰": "07:00-09:00", "巳": "09:00-11:00",
@@ -398,6 +415,27 @@ def api_fortune():
         analysis = analyze_bazi(bazi)
         advice = get_advice(bazi, daily, analysis)
 
+        # 根据用户八字个性化宜忌排序
+        xi_list = analysis["xi"]
+        ji_list = analysis["ji"]
+
+        def thing_score(item, is_yi):
+            """根据事项五行与用户喜忌的匹配度打分"""
+            wx = THING_WUXING.get(item, "")
+            if not wx:
+                return 0
+            if wx in xi_list:
+                return 2 if is_yi else -1  # 喜用神的事，宜里排前面，忌里降权
+            if wx in ji_list:
+                return -1 if is_yi else 2  # 忌神的事，宜里降权，忌里排前面
+            return 0
+
+        # 重新排序：与用户喜用神相关的排前面
+        yi_sorted = sorted(result["yi"], key=lambda x: -thing_score(x, True))
+        ji_sorted = sorted(result["ji"], key=lambda x: -thing_score(x, False))
+        result["yi"] = yi_sorted
+        result["ji"] = ji_sorted
+
         # 根据八字解决宜忌冲突
         if daily["conflict"]:
             day_wx = daily["wx"]
@@ -581,6 +619,221 @@ def api_speak():
     return send_file(audio_data, mimetype="audio/mpeg")
 
 
+STATS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stats.json")
+
+def load_stats():
+    if os.path.exists(STATS_PATH):
+        with open(STATS_PATH) as f:
+            return json.load(f)
+    return {"total_visits": 0, "unique_users": 0, "users": [], "visits": []}
+
+def save_stats(stats):
+    with open(STATS_PATH, "w") as f:
+        json.dump(stats, f, ensure_ascii=False, indent=2)
+
+
+JOURNALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "journals.json")
+
+# GitHub 同步配置
+import hashlib
+import urllib.request
+import urllib.parse
+import base64
+
+GH_TOKEN = os.environ.get("GH_TOKEN", "")
+GH_REPO = "tichen4869/mystic-data"
+
+def birth_hash(birth):
+    """生辰哈希，不明文存储"""
+    return hashlib.sha256(birth.encode()).hexdigest()[:16]
+
+def gh_read(file_path):
+    """从 GitHub 读取文件"""
+    if not GH_TOKEN:
+        return None, None
+    url = f"https://api.github.com/repos/{GH_REPO}/contents/{file_path}"
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"token {GH_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            data = json.loads(r.read())
+            content = base64.b64decode(data["content"]).decode()
+            return json.loads(content), data["sha"]
+    except Exception:
+        return None, None
+
+def gh_write(file_path, content, sha=None):
+    """写入 GitHub 文件"""
+    if not GH_TOKEN:
+        return False
+    url = f"https://api.github.com/repos/{GH_REPO}/contents/{file_path}"
+    encoded = base64.b64encode(json.dumps(content, ensure_ascii=False).encode()).decode()
+    body = {"message": "sync", "content": encoded}
+    if sha:
+        body["sha"] = sha
+    data = json.dumps(body).encode()
+    req = urllib.request.Request(url, data=data, method="PUT", headers={
+        "Authorization": f"token {GH_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+    })
+    try:
+        urllib.request.urlopen(req, timeout=10)
+        return True
+    except Exception:
+        return False
+
+def load_journals():
+    if os.path.exists(JOURNALS_PATH):
+        with open(JOURNALS_PATH) as f:
+            return json.load(f)
+    return {}
+
+def save_journals(data):
+    with open(JOURNALS_PATH, "w") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+@app.route("/api/journal", methods=["GET"])
+def get_journal():
+    """获取某用户某天的记录"""
+    birth = request.args.get("birth", "")
+    date = request.args.get("date", "")
+    if not birth or not date:
+        return jsonify({})
+    # 本地
+    journals = load_journals()
+    key = birth + "_" + date
+    entry = journals.get(key)
+    if entry:
+        return jsonify(entry)
+    # GitHub
+    bh = birth_hash(birth)
+    gh_data, _ = gh_read(f"users/{bh}/journal.json")
+    if gh_data and date in gh_data:
+        return jsonify(gh_data[date])
+    return jsonify({})
+
+
+@app.route("/api/journal", methods=["POST"])
+def save_journal():
+    """保存记录（本地 + GitHub 双写）"""
+    data = request.get_json()
+    birth = data.get("birth", "")
+    date = data.get("date", "")
+    if not birth or not date:
+        return jsonify({"error": "missing data"}), 400
+    # 本地
+    journals = load_journals()
+    key = birth + "_" + date
+    journals[key] = data
+    save_journals(journals)
+    # GitHub 同步（后台）
+    import threading
+    def sync():
+        bh = birth_hash(birth)
+        gh_data, sha = gh_read(f"users/{bh}/journal.json")
+        if gh_data is None:
+            gh_data = {}
+        gh_data[date] = data
+        gh_write(f"users/{bh}/journal.json", gh_data, sha)
+    threading.Thread(target=sync, daemon=True).start()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/journal/all")
+def get_all_journals():
+    """获取某用户所有记录（合并本地 + GitHub）"""
+    birth = request.args.get("birth", "")
+    if not birth:
+        return jsonify({})
+    # 本地
+    journals = load_journals()
+    prefix = birth + "_"
+    result = {}
+    for k, v in journals.items():
+        if k.startswith(prefix):
+            date = k[len(prefix):]
+            result[date] = v
+    # GitHub 合并
+    bh = birth_hash(birth)
+    gh_data, _ = gh_read(f"users/{bh}/journal.json")
+    if gh_data:
+        for date, entry in gh_data.items():
+            if date not in result:
+                result[date] = entry
+    return jsonify(result)
+
+
+@app.route("/api/ping")
+def api_ping():
+    """每次打开页面记录一次访问"""
+    stats = load_stats()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    ua = request.headers.get("User-Agent", "")
+    device = "mobile" if "Mobile" in ua else "desktop"
+    stats["total_visits"] += 1
+    # 按 IP 去重统计独立用户
+    known_ips = [u.get("ip") for u in stats["users"]]
+    if ip not in known_ips:
+        stats["unique_users"] += 1
+        stats["users"].append({
+            "ip": ip, "device": device,
+            "first_visit": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        })
+    save_stats(stats)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/register")
+def api_register():
+    """用户设置生辰时记录（=部署/使用）"""
+    stats = load_stats()
+    name = request.args.get("name", "匿名")
+    birth = request.args.get("birth", "")
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    ua = request.headers.get("User-Agent", "")
+    device = "mobile" if "Mobile" in ua else "desktop"
+
+    # 更新用户信息
+    found = False
+    for u in stats["users"]:
+        if u.get("ip") == ip:
+            u["name"] = name
+            u["birth"] = birth
+            u["device"] = device
+            u["last_active"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+            found = True
+            break
+    if not found:
+        stats["unique_users"] += 1
+        stats["users"].append({
+            "ip": ip, "name": name, "birth": birth, "device": device,
+            "first_visit": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "last_active": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        })
+    save_stats(stats)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/stats")
+def api_stats():
+    """查看统计数据"""
+    stats = load_stats()
+    return jsonify({
+        "total_visits": stats["total_visits"],
+        "unique_users": stats["unique_users"],
+        "users": [{
+            "name": u.get("name", "匿名"),
+            "device": u.get("device", ""),
+            "first_visit": u.get("first_visit", ""),
+            "last_active": u.get("last_active", u.get("first_visit", "")),
+        } for u in stats["users"]]
+    })
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
@@ -591,14 +844,6 @@ def service_worker():
     return app.send_static_file("sw.js")
 
 
-@app.route("/api/config")
-def api_config():
-    """读取本地 config.json 作为默认生辰（方便旧用户迁移）"""
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
-    if os.path.exists(config_path):
-        with open(config_path) as f:
-            return jsonify(json.load(f))
-    return jsonify({})
 
 
 if __name__ == "__main__":
