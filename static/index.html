@@ -555,17 +555,27 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     if(!('speechSynthesis' in window)) return;
     hasSpoken = true;
 
-    var text = '早安。今天是' + (d.lunar||'') + '，' + (d.gz||'') + '日。'
-      + (d.luck_msg||'') + '。'
-      + '穿搭方面，建议今天穿' + (d.outfit||'') + '会比较旺。'
-      + '财神位在' + (d.caishen||'') + '方向。'
-      + '今天适合做的事有：' + (d.yi||[]).slice(0,3).join('、') + '。'
-      + '尽量避免：' + (d.ji||[]).slice(0,3).join('、') + '。'
-      + '祝你今天一切顺利。';
+    var level = d.luck_level || 'neutral';
+    var opening = level==='up' ? '早安呀！今天运势不错哦。'
+      : level==='down' ? '早安。今天能量稍弱，别着急。'
+      : '早安。今天运势平平稳稳的。';
+    var closing = level==='up' ? '总之今天很适合行动，加油！'
+      : level==='down' ? '稳一点就好，明天会更好的。'
+      : '顺其自然就好，祝你今天开心。';
+    var yi = (d.yi||[]).slice(0,3).join('、');
+    var ji = (d.ji||[]).slice(0,3).join('、');
+    var text = opening
+      + '今天是农历' + (d.lunar||'') + '，' + (d.luck_msg||'') + '。'
+      + '穿搭的话，今天穿' + (d.outfit||'') + '会比较旺。'
+      + '财神方位在' + (d.caishen||'') + '。'
+      + '适合做的事呢，有' + yi + '。'
+      + '不太建议' + ji + '。'
+      + closing;
 
     var u = new SpeechSynthesisUtterance(text);
     u.lang = 'zh-CN';
-    u.rate = 1.1;
+    u.rate = 0.95;
+    u.pitch = 1.05;
     // 找中文语音
     var voices = speechSynthesis.getVoices();
     for(var i = 0; i < voices.length; i++) {

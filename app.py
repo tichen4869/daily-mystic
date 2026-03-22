@@ -474,14 +474,28 @@ def api_voice():
     analysis = analyze_bazi(bazi)
     advice = get_advice(bazi, daily, analysis)
 
+    # 根据运势级别用不同语气
+    if advice["level"] == "up":
+        opening = "早安呀！今天运势不错哦。"
+        closing = "总之今天很适合行动，加油！"
+    elif advice["level"] == "down":
+        opening = "早安。今天能量稍弱，别着急。"
+        closing = "稳一点就好，明天会更好的。"
+    else:
+        opening = "早安。今天运势平平稳稳的。"
+        closing = "顺其自然就好，祝你今天开心。"
+
+    yi_str = '、'.join(daily['yi'][:3])
+    ji_str = '、'.join(daily['ji'][:3])
+
     text = (
-        f"早安。今天是{daily['lunar']}，{daily['gz']}日。"
-        f"{advice['msg']}。"
-        f"穿搭方面，建议今天穿{advice['outfit']}会比较旺。"
-        f"财神位在{daily['caishen']}方向。"
-        f"今天适合做的事有：{'、'.join(daily['yi'][:3])}。"
-        f"尽量避免：{'、'.join(daily['ji'][:3])}。"
-        f"祝你今天一切顺利。"
+        f"{opening}"
+        f"今天是农历{daily['lunar']}，{advice['msg']}。"
+        f"穿搭的话，今天穿{advice['outfit']}会比较旺。"
+        f"财神方位在{daily['caishen']}。"
+        f"适合做的事呢，有{yi_str}。"
+        f"不太建议{ji_str}。"
+        f"{closing}"
     )
 
     return jsonify({"text": text})
