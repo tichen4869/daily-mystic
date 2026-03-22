@@ -454,6 +454,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   var mood = '';
   var customs = [];
   var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+  var isDesktop = location.search.indexOf('desktop=1') >= 0;
 
   // 每个用户独立的 journal key
   function journalKey() {
@@ -765,8 +766,8 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     playVoice();
   };
 
-  // 桌面端隐藏播报按钮（由 popup.py 自动播报）
-  if(isLocal) {
+  // 桌面端隐藏播报按钮
+  if(isDesktop) {
     var sr = document.getElementById('speakRow');
     if(sr) sr.style.display = 'none';
   }
@@ -777,20 +778,26 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
     lastFortuneData = d;
 
-    // 预加载语音（页面显示的同时后台下载音频）
-    if(!voiceReady && !isLocal) preloadVoice();
+    // 预加载语音
+    preloadVoice();
 
-    // 自动播报（仅手机端，桌面端由 popup.py 处理）
     var spokenKey = 'mystic_spoken_' + curDate;
-    if(!isLocal && !localStorage.getItem(spokenKey)) {
-      function autoSpeak() {
+    if(!localStorage.getItem(spokenKey)) {
+      if(isDesktop) {
+        // 桌面端：运势加载完直接播报（webview 没有 autoplay 限制）
         localStorage.setItem(spokenKey, '1');
-        playVoice();
-        document.removeEventListener('touchstart', autoSpeak);
-        document.removeEventListener('click', autoSpeak);
+        setTimeout(function(){ playVoice(); }, 500);
+      } else {
+        // 手机端：等触屏后播报
+        function autoSpeak() {
+          localStorage.setItem(spokenKey, '1');
+          playVoice();
+          document.removeEventListener('touchstart', autoSpeak);
+          document.removeEventListener('click', autoSpeak);
+        }
+        document.addEventListener('touchstart', autoSpeak, {once:true});
+        document.addEventListener('click', autoSpeak, {once:true});
       }
-      document.addEventListener('touchstart', autoSpeak, {once:true});
-      document.addEventListener('click', autoSpeak, {once:true});
     }
 
     // particles color
