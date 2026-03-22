@@ -10,6 +10,7 @@ import urllib.parse
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 PORT = 9283
+afplay_proc = None
 URL = f"http://127.0.0.1:{PORT}"
 
 
@@ -58,8 +59,9 @@ def speak_fortune():
         with urllib.request.urlopen(url, timeout=30) as r:
             tmp.write(r.read())
         tmp.close()
-        # 用 afplay 播放（macOS 自带）
-        subprocess.Popen(["afplay", tmp.name])
+        # 用 afplay 播放（macOS 自带），记录进程以便停止
+        global afplay_proc
+        afplay_proc = subprocess.Popen(["afplay", tmp.name])
     except Exception:
         pass
 
@@ -85,6 +87,12 @@ def main():
         y=0,
         on_top=True,
     )
+    def on_closed():
+        global afplay_proc
+        if afplay_proc:
+            afplay_proc.terminate()
+
+    window.events.closed += on_closed
     webview.start()
 
 
