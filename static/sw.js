@@ -1,4 +1,4 @@
-var CACHE = 'mystic-v1';
+var CACHE = 'mystic-v2';
 var PRECACHE = ['/', '/static/index.html'];
 
 self.addEventListener('install', function(e) {
@@ -11,7 +11,15 @@ self.addEventListener('install', function(e) {
 });
 
 self.addEventListener('activate', function(e) {
-  e.waitUntil(self.clients.claim());
+  // 清除旧缓存
+  e.waitUntil(
+    caches.keys().then(function(names) {
+      return Promise.all(
+        names.filter(function(n) { return n !== CACHE; })
+             .map(function(n) { return caches.delete(n); })
+      );
+    }).then(function() { return self.clients.claim(); })
+  );
 });
 
 self.addEventListener('fetch', function(e) {
