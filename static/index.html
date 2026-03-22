@@ -306,7 +306,9 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
 <script>
 (function(){
-  var curDate = new Date().toISOString().split('T')[0];
+  // 用手机本地日期，不用 UTC
+  var now = new Date();
+  var curDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   var todayISO = curDate;
   var mood = '';
   var customs = [];
