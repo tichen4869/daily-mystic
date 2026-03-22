@@ -428,6 +428,11 @@ def index():
     return app.send_static_file("index.html")
 
 
+@app.route("/static/sw.js")
+def service_worker():
+    return app.send_static_file("sw.js")
+
+
 @app.route("/api/config")
 def api_config():
     """读取本地 config.json 作为默认生辰（方便旧用户迁移）"""

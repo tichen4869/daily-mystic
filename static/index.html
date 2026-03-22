@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="每日玄学">
+<meta name="theme-color" content="#F5F0E8">
+<link rel="manifest" href="/static/manifest.json">
 <title>每日玄学</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -716,6 +720,10 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     setTimeout(function(){t.classList.remove('show');},1500);
   }
 })();
+// 注册 Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/static/sw.js').catch(function(){});
+}
 </script>
 </body>
 </html>
