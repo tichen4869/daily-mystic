@@ -779,7 +779,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     if('speechSynthesis' in window) {
       speechUtter = new SpeechSynthesisUtterance(text);
       speechUtter.lang = 'zh-CN';
-      speechUtter.rate = 1.2;
+      speechUtter.rate = 0.9;
       speechUtter.pitch = 1.05;
       var voices = speechSynthesis.getVoices();
       for(var i = 0; i < voices.length; i++) {
