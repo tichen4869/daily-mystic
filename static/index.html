@@ -545,9 +545,47 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     });
   }
 
+  // 语音播报（用浏览器 Web Speech API）
+  var hasSpoken = false;
+  function speakFortune(d) {
+    if(hasSpoken || !d.luck_msg) return;
+    if(!('speechSynthesis' in window)) return;
+    hasSpoken = true;
+
+    var text = '早安。今天是' + (d.lunar||'') + '，' + (d.gz||'') + '日。'
+      + (d.luck_msg||'') + '。'
+      + '穿搭方面，建议今天穿' + (d.outfit||'') + '会比较旺。'
+      + '财神位在' + (d.caishen||'') + '方向。'
+      + '今天适合做的事有：' + (d.yi||[]).slice(0,3).join('、') + '。'
+      + '尽量避免：' + (d.ji||[]).slice(0,3).join('、') + '。'
+      + '祝你今天一切顺利。';
+
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN';
+    u.rate = 1.1;
+    // 找中文语音
+    var voices = speechSynthesis.getVoices();
+    for(var i = 0; i < voices.length; i++) {
+      if(voices[i].lang.startsWith('zh')) { u.voice = voices[i]; break; }
+    }
+    speechSynthesis.speak(u);
+  }
+
+  // 语音列表可能异步加载
+  if('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = function() {};
+  }
+
   function renderFortune(d){
     document.getElementById('setupCard').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
+
+    // 自动语音播报（每天第一次打开时）
+    var spokenKey = 'mystic_spoken_' + curDate;
+    if(!localStorage.getItem(spokenKey)) {
+      localStorage.setItem(spokenKey, '1');
+      setTimeout(function(){ speakFortune(d); }, 500);
+    }
 
     // particles color
     if(d.particle_color){
