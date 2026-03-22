@@ -503,39 +503,10 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   function loadFortune(){
     var b = getCurBirth();
     if(!b) return;
-
-    // 先从缓存秒开
-    var cacheKey = 'mystic_cache_' + curDate + '_' + b;
-    var cached = localStorage.getItem(cacheKey);
-    if(cached) {
-      try { renderFortune(JSON.parse(cached)); } catch(e) {}
-    }
-
-    // 后台请求最新数据
     var url = '/api/fortune?birth='+encodeURIComponent(b)+'&date='+curDate;
     fetch(url).then(function(r){return r.json()}).then(function(d){
       renderFortune(d);
-      localStorage.setItem(cacheKey, JSON.stringify(d));
-      // 清理旧缓存（只保留最近7天）
-      for(var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if(k && k.startsWith('mystic_cache_') && k !== cacheKey) {
-          var parts = k.split('_');
-          if(parts[2] && parts[2] < new Date(Date.now() - 7*86400000).toISOString().split('T')[0]) {
-            localStorage.removeItem(k);
-          }
-        }
-      }
-    }).catch(function(){
-      if(!cached) showToast('正在唤醒服务，请稍等…');
-      // 服务器冷启动，重试
-      setTimeout(function(){
-        fetch(url).then(function(r){return r.json()}).then(function(d){
-          renderFortune(d);
-          localStorage.setItem(cacheKey, JSON.stringify(d));
-        }).catch(function(){ showToast('加载失败，请稍后再试'); });
-      }, 5000);
-    });
+    }).catch(function(){ showToast('加载失败'); });
   }
 
   function renderFortune(d){
