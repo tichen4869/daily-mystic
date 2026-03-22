@@ -596,13 +596,29 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     if(birth) {
       fillBirth(birth);
       loadFortune();
+    } else if(isDesktop) {
+      // 桌面端：从本地 config.json 恢复
+      fetch('/api/local-birth').then(function(r){return r.json()}).then(function(d){
+        if(d.birth) {
+          persons.push({name:"我", birth: d.birth});
+          curPersonIdx = 0;
+          savePersons();
+          renderPersons();
+          fillBirth(d.birth);
+          loadFortune();
+        } else {
+          showNewUser();
+        }
+      }).catch(function(){ showNewUser(); });
     } else {
-      document.getElementById('profSec').classList.add('show');
-      document.getElementById('ptog').classList.add('open');
-      // 新用户需要输入，取消遮罩
-      document.getElementById('birthWrap').classList.remove('masked');
-      document.getElementById('eyeBtn').textContent = '🐵';
+      showNewUser();
     }
+  }
+  function showNewUser() {
+    document.getElementById('profSec').classList.add('show');
+    document.getElementById('ptog').classList.add('open');
+    document.getElementById('birthWrap').classList.remove('masked');
+    document.getElementById('eyeBtn').textContent = '🐵';
   }
   init();
 
@@ -671,6 +687,11 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     renderPersons();
     showToast('命盘已更新');
     loadFortune();
+    // 桌面端保存到本地文件
+    if(isDesktop) {
+      fetch('/api/local-birth',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({birth:val})}).catch(function(){});
+    }
     // 记录用户
     var pname = persons[curPersonIdx] ? persons[curPersonIdx].name : '匿名';
     fetch('/api/register?name='+encodeURIComponent(pname)+'&birth='+encodeURIComponent(val)).catch(function(){});

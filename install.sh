@@ -1,12 +1,12 @@
 #!/bin/bash
-# ✧ 每日玄学 - 一键安装 ✧
+# ✧ 玄日 - 一键安装 ✧
 
 echo ""
-echo "  ✧ 正在安装「每日玄学」✧"
+echo "  ✧ 正在安装「玄日」✧"
 echo ""
 
 DIR="$HOME/daily-mystic"
-APP="$HOME/Desktop/每日玄学.app"
+APP="$HOME/Desktop/玄日.app"
 
 # 1. 下载文件
 mkdir -p "$DIR"
@@ -74,7 +74,7 @@ cat > "$APP/Contents/Info.plist" << 'PLIST'
     <key>CFBundleExecutable</key>
     <string>launch</string>
     <key>CFBundleName</key>
-    <string>每日玄学</string>
+    <string>玄日</string>
     <key>CFBundleIdentifier</key>
     <string>com.mystic.daily</string>
     <key>CFBundleVersion</key>
@@ -121,7 +121,7 @@ def start_server():
 def main():
     import webview
     if not is_running(): start_server()
-    webview.create_window("每日玄学", URL, width=440, height=780,
+    webview.create_window("玄日", URL, width=440, height=780,
         resizable=True, min_size=(360, 600))
     webview.start()
 if __name__ == "__main__": main()
@@ -137,6 +137,6 @@ chmod +x "$APP/Contents/MacOS/launch"
 echo ""
 echo "  ✓ 安装完成！"
 echo ""
-echo "  双击桌面上的「每日玄学」图标即可使用"
+echo "  双击桌面上的「玄日」图标即可使用"
 echo "  首次打开请点击「命盘」输入你的生辰"
 echo ""

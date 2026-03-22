@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""每日玄学 - 原生弹窗"""
+"""玄日 - 原生弹窗"""
 
 import sys
 import os
@@ -44,7 +44,7 @@ def main():
 
     # 桌面端加 ?desktop=1 让网页知道要自动播报
     window = webview.create_window(
-        "每日玄学",
+        "玄日",
         URL + "?desktop=1",
         width=440,
         height=780,

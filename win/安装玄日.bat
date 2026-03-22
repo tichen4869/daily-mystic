@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo.
-echo   ✧ 正在安装「每日玄学」✧
+echo   ✧ 正在安装「玄日」✧
 echo.
 
 set DIR=%USERPROFILE%\daily-mystic
@@ -21,12 +21,12 @@ pip install cnlunar flask pywebview >nul 2>&1
 
 :: 创建桌面快捷方式
 echo   → 创建桌面快捷方式…
-powershell -Command "$ws = New-Object -ComObject WScript.Shell; $sc = $ws.CreateShortcut('%USERPROFILE%\Desktop\每日玄学.lnk'); $sc.TargetPath = 'pythonw'; $sc.Arguments = '%DIR%\popup.py'; $sc.WorkingDirectory = '%DIR%'; $sc.Description = '每日玄学'; $sc.Save()"
+powershell -Command "$ws = New-Object -ComObject WScript.Shell; $sc = $ws.CreateShortcut('%USERPROFILE%\Desktop\玄日.lnk'); $sc.TargetPath = 'pythonw'; $sc.Arguments = '%DIR%\popup.py'; $sc.WorkingDirectory = '%DIR%'; $sc.Description = '玄日'; $sc.Save()"
 
 echo.
 echo   ✓ 安装完成！
 echo.
-echo   双击桌面上的「每日玄学」快捷方式即可使用
+echo   双击桌面上的「玄日」快捷方式即可使用
 echo   首次打开请点击「命盘」输入你的生辰
 echo.
 pause
