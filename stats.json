@@ -1,14 +1,14 @@
 {
-  "total_visits": 6,
+  "total_visits": 7,
   "unique_users": 1,
   "users": [
     {
       "ip": "127.0.0.1",
       "device": "desktop",
       "first_visit": "2026-03-21 20:00",
-      "name": "我",
+      "name": "Ti",
       "birth": "1995/02/21/21:35",
-      "last_active": "2026-03-21 20:18"
+      "last_active": "2026-03-21 20:38"
     }
   ],
   "visits": []

@@ -1047,12 +1047,16 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     document.getElementById('calMonthLabel').textContent = calYear + '年' + (calMon+1) + '月';
     var journal = JSON.parse(localStorage.getItem(journalKey()) || '{}');
 
-    // 从服务器拉取合并
+    // 先画本地数据
+    drawCal(journal);
+
+    // 后台从服务器拉取合并
     var b = getCurBirth();
     if(b) {
       fetch('/api/journal/all?birth='+encodeURIComponent(b))
         .then(function(r){return r.json()})
         .then(function(server){
+          if(!server || typeof server !== 'object') return;
           var merged = false;
           for(var k in server) {
             if(!journal[k]) { journal[k] = server[k]; merged = true; }
@@ -1063,7 +1067,6 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
           }
         }).catch(function(){});
     }
-    drawCal(journal);
   }
 
   function drawCal(journal) {
