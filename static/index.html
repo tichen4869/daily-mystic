@@ -637,6 +637,9 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     renderPersons();
     showToast('命盘已更新');
     loadFortune();
+    // 记录用户
+    var pname = persons[curPersonIdx] ? persons[curPersonIdx].name : '匿名';
+    fetch('/api/register?name='+encodeURIComponent(pname)+'&birth='+encodeURIComponent(val)).catch(function(){});
   }
 
   function loadFortune(){
@@ -1060,6 +1063,9 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       if(hint) hint.textContent = '🔊 点击播报';
     }
   });
+
+  // 记录访问量
+  fetch('/api/ping').catch(function(){});
 
 // 注册 Service Worker
 if('serviceWorker' in navigator){

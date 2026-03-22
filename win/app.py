@@ -257,8 +257,41 @@ def analyze_bazi(bazi):
         "xi": [xi, yong], "ji": ji,
     }
 
+# 近义词合并（保留前面的）
+SYNONYMS = {
+    "做慈善": "做善事",
+    "做好事": "做善事",
+    "施恩、做善事": "做善事",
+    "结婚": "结婚",
+    "结婚姻": "结婚",
+    "搬家入住": "搬家",
+    "搬家": "搬家",
+    "看病、体检": "看病",
+    "看病": "看病",
+    "做法事": "祈祷",
+    "做法事、祈祷": "祈祷",
+    "装修房屋": "装修",
+    "装修": "装修",
+    "破土动工": "动工挖地",
+    "动工挖地": "动工挖地",
+    "学习新技能": "学习进修",
+    "学习、进修": "学习进修",
+    "入学、报名": "学习进修",
+    "提亲、订婚": "订婚",
+    "合八字": "订婚",
+}
+
 def translate(items):
-    return [YI_JI_TRANSLATE.get(x, x) for x in items]
+    result = []
+    seen = set()
+    for x in items:
+        modern = YI_JI_TRANSLATE.get(x, x)
+        # 合并近义词
+        canonical = SYNONYMS.get(modern, modern)
+        if canonical not in seen:
+            seen.add(canonical)
+            result.append(canonical)
+    return result
 
 SHICHEN_NAMES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
 
@@ -287,14 +320,21 @@ def get_daily(target):
     a = cnlunar.Lunar(target, godType="8char")
     gz = day_ganzhi_from_date(target)
     wx = GAN_WUXING[gz[0]]
-    yi = translate(a.goodThing[:6]) if a.goodThing else ["诸事不宜"]
-    ji = translate(a.badThing[:6]) if a.badThing else ["百无禁忌"]
-    jishi = get_lucky_hours(a)  # 默认不排序，API层会重新排
+    yi_raw = translate(a.goodThing[:8]) if a.goodThing else ["诸事不宜"]
+    ji_raw = translate(a.badThing[:8]) if a.badThing else ["百无禁忌"]
+
+    # 去重（翻译后意思相同的只保留一个）
+    yi = list(dict.fromkeys(yi_raw))[:6]
+    ji = list(dict.fromkeys(ji_raw))[:6]
+
+    conflict = list(set(yi) & set(ji))
+    jishi = get_lucky_hours(a)
     return {
         "lunar": f"{a.lunarMonthCn}{a.lunarDayCn}",
         "gz": gz, "wx": wx,
         "yi": yi, "ji": ji, "jishi": jishi,
         "caishen": CAISHEN_MAP.get(gz[0], "南方"),
+        "conflict": conflict,
     }
 
 def get_advice(bazi, daily, analysis):
@@ -357,6 +397,30 @@ def api_fortune():
         bazi = calc_bazi(birth_dt)
         analysis = analyze_bazi(bazi)
         advice = get_advice(bazi, daily, analysis)
+
+        # 根据八字解决宜忌冲突
+        if daily["conflict"]:
+            day_wx = daily["wx"]
+            xi = analysis["xi"]
+            ji_wx = analysis["ji"]
+            for item in daily["conflict"]:
+                # 当日五行合喜用 → 这件事今天对你有利 → 留在宜
+                # 当日五行合忌神 → 这件事今天对你不利 → 留在忌
+                if day_wx in xi:
+                    result["ji"] = [x for x in result["ji"] if x != item]
+                elif day_wx in ji_wx:
+                    result["yi"] = [x for x in result["yi"] if x != item]
+                else:
+                    # 中性日：看这件事本身偏动还是偏静
+                    # 偏动的事（出行、交易、开业等）在中性日归宜
+                    active_words = ["出门", "旅行", "交易", "买卖", "开业", "开张", "搬家",
+                                    "结婚", "签合同", "入职", "聚会", "社交"]
+                    is_active = any(w in item for w in active_words)
+                    if is_active:
+                        result["ji"] = [x for x in result["ji"] if x != item]
+                    else:
+                        result["yi"] = [x for x in result["yi"] if x != item]
+
         # 重新按喜用神排序吉时
         a = cnlunar.Lunar(target, godType="8char")
         result["jishi"] = get_lucky_hours(a, analysis["xi"])
@@ -410,22 +474,121 @@ def api_voice():
     analysis = analyze_bazi(bazi)
     advice = get_advice(bazi, daily, analysis)
 
+    # 根据运势级别用不同语气
+    if advice["level"] == "up":
+        opening = "早安呀！今天运势不错哦。"
+        closing = "总之今天很适合行动，加油！"
+    elif advice["level"] == "down":
+        opening = "早安。今天能量稍弱，别着急。"
+        closing = "稳一点就好，明天会更好的。"
+    else:
+        opening = "早安。今天运势平平稳稳的。"
+        closing = "顺其自然就好，祝你今天开心。"
+
+    yi_str = '、'.join(daily['yi'][:3])
+    ji_str = '、'.join(daily['ji'][:3])
+
     text = (
-        f"早安。今天是{daily['lunar']}，{daily['gz']}日。"
-        f"{advice['msg']}。"
-        f"穿搭方面，建议今天穿{advice['outfit']}会比较旺。"
-        f"财神位在{daily['caishen']}方向。"
-        f"今天适合做的事有：{'、'.join(daily['yi'][:3])}。"
-        f"尽量避免：{'、'.join(daily['ji'][:3])}。"
-        f"祝你今天一切顺利。"
+        f"{opening}"
+        f"今天是农历{daily['lunar']}，{advice['msg']}。"
+        f"穿搭的话，今天穿{advice['outfit']}会比较旺。"
+        f"财神方位在{daily['caishen']}。"
+        f"适合做的事呢，有{yi_str}。"
+        f"不太建议{ji_str}。"
+        f"{closing}"
     )
 
     return jsonify({"text": text})
 
 
+@app.route("/api/speak")
+def api_speak():
+    """生成语音 MP3（用 Google Translate TTS）"""
+    import urllib.request
+    import tempfile
+
+    birth = request.args.get("birth", "")
+    date = request.args.get("date", "")
+
+    try:
+        birth_dt = datetime.strptime(birth, "%Y/%m/%d/%H:%M")
+    except Exception:
+        return "missing birth", 400
+
+    try:
+        target = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
+    except Exception:
+        target = datetime.now()
+
+    daily = get_daily(target)
+    bazi = calc_bazi(birth_dt)
+    analysis = analyze_bazi(bazi)
+    advice = get_advice(bazi, daily, analysis)
+
+    if advice["level"] == "up":
+        opening = "早安呀！今天运势不错哦。"
+        closing = "总之今天很适合行动，加油！"
+    elif advice["level"] == "down":
+        opening = "早安。今天能量稍弱，别着急。"
+        closing = "稳一点就好，明天会更好的。"
+    else:
+        opening = "早安。今天运势平平稳稳的。"
+        closing = "顺其自然就好，祝你今天开心。"
+
+    yi_str = '、'.join(daily['yi'][:3])
+    ji_str = '、'.join(daily['ji'][:3])
+
+    text = (
+        f"{opening}"
+        f"今天是农历{daily['lunar']}，{advice['msg']}。"
+        f"穿搭的话，今天穿{advice['outfit']}会比较旺。"
+        f"财神方位在{daily['caishen']}。"
+        f"适合做的事呢，有{yi_str}。"
+        f"不太建议{ji_str}。"
+        f"{closing}"
+    )
+
+    # 尝试 edge-tts（本地），失败则用 gTTS
+    try:
+        import asyncio
+        import edge_tts
+        tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        async def gen():
+            c = edge_tts.Communicate(text, "zh-CN-XiaoxiaoNeural", rate="+5%")
+            await c.save(tmp.name)
+        asyncio.run(gen())
+        from flask import send_file
+        return send_file(tmp.name, mimetype="audio/mpeg")
+    except Exception:
+        pass
+
+    # 回退：Google Translate TTS（分段，每段 200 字以内）
+    import io
+    chunks = [text[i:i+200] for i in range(0, len(text), 200)]
+    audio_data = io.BytesIO()
+    for chunk in chunks:
+        encoded = urllib.parse.quote(chunk)
+        url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q={encoded}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                audio_data.write(r.read())
+        except Exception:
+            pass
+
+    audio_data.seek(0)
+    from flask import send_file
+    return send_file(audio_data, mimetype="audio/mpeg")
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
+
+
+@app.route("/static/sw.js")
+def service_worker():
+    return app.send_static_file("sw.js")
 
 
 @app.route("/api/config")

@@ -581,6 +581,86 @@ def api_speak():
     return send_file(audio_data, mimetype="audio/mpeg")
 
 
+STATS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stats.json")
+
+def load_stats():
+    if os.path.exists(STATS_PATH):
+        with open(STATS_PATH) as f:
+            return json.load(f)
+    return {"total_visits": 0, "unique_users": 0, "users": [], "visits": []}
+
+def save_stats(stats):
+    with open(STATS_PATH, "w") as f:
+        json.dump(stats, f, ensure_ascii=False, indent=2)
+
+
+@app.route("/api/ping")
+def api_ping():
+    """每次打开页面记录一次访问"""
+    stats = load_stats()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    ua = request.headers.get("User-Agent", "")
+    device = "mobile" if "Mobile" in ua else "desktop"
+    stats["total_visits"] += 1
+    # 按 IP 去重统计独立用户
+    known_ips = [u.get("ip") for u in stats["users"]]
+    if ip not in known_ips:
+        stats["unique_users"] += 1
+        stats["users"].append({
+            "ip": ip, "device": device,
+            "first_visit": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        })
+    save_stats(stats)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/register")
+def api_register():
+    """用户设置生辰时记录（=部署/使用）"""
+    stats = load_stats()
+    name = request.args.get("name", "匿名")
+    birth = request.args.get("birth", "")
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    ua = request.headers.get("User-Agent", "")
+    device = "mobile" if "Mobile" in ua else "desktop"
+
+    # 更新用户信息
+    found = False
+    for u in stats["users"]:
+        if u.get("ip") == ip:
+            u["name"] = name
+            u["birth"] = birth
+            u["device"] = device
+            u["last_active"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+            found = True
+            break
+    if not found:
+        stats["unique_users"] += 1
+        stats["users"].append({
+            "ip": ip, "name": name, "birth": birth, "device": device,
+            "first_visit": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "last_active": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        })
+    save_stats(stats)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/stats")
+def api_stats():
+    """查看统计数据"""
+    stats = load_stats()
+    return jsonify({
+        "total_visits": stats["total_visits"],
+        "unique_users": stats["unique_users"],
+        "users": [{
+            "name": u.get("name", "匿名"),
+            "device": u.get("device", ""),
+            "first_visit": u.get("first_visit", ""),
+            "last_active": u.get("last_active", u.get("first_visit", "")),
+        } for u in stats["users"]]
+    })
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")

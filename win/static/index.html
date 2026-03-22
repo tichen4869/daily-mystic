@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="玄日">
+<meta name="theme-color" content="#130F1A">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="manifest" href="/static/manifest.json">
 <title>每日玄学</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -188,8 +193,102 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   transition:opacity .3s;pointer-events:none}
 .toast.show{opacity:1}
 
+/* 日历页 */
+.cal-toggle{text-align:center;padding:4px 0;z-index:1;position:relative}
+.cal-btn{font-size:12px;color:#9B8B7A;cursor:pointer;border:none;background:none;
+  font-family:inherit;text-decoration:underline;text-underline-offset:3px}
+.cal-btn:hover{color:#C4956A}
+.cal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:center}
+.cal-overlay.show{display:flex}
+.cal-panel{background:#FFFDF7;border-radius:12px;width:92%;max-width:400px;max-height:85vh;
+  overflow-y:auto;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-header .cal-title{font-size:16px;font-weight:600;color:#3B2F2F}
+.cal-header .cal-close{font-size:20px;color:#9B8B7A;cursor:pointer;border:none;background:none;
+  padding:0 4px}
+.cal-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px}
+.cal-nav .cn{font-size:14px;color:#3B2F2F;font-weight:500}
+.cal-nav .ca{font-size:16px;color:#9B8B7A;cursor:pointer;border:none;background:none;padding:2px 8px}
+.cal-nav .ca:hover{color:#C4956A}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;
+  font-size:11px;color:#9B8B7A;margin-bottom:4px}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day{text-align:center;padding:8px 2px;border-radius:6px;cursor:pointer;font-size:13px;
+  color:#3B2F2F;position:relative;transition:background .15s}
+.cal-day:hover{background:#F5F0E8}
+.cal-day.today{font-weight:700;color:#C4956A}
+.cal-day.other{color:#C9B99A}
+.cal-day .cal-dot{width:6px;height:6px;border-radius:50%;margin:2px auto 0;display:none}
+.cal-day.has-journal .cal-dot{display:block}
+.cal-day.mood-yes .cal-dot{background:#558B2F}
+.cal-day.mood-ok .cal-dot{background:#C4956A}
+.cal-day.mood-no .cal-dot{background:#C62828}
+.cal-day.mood-none .cal-dot{background:#C9B99A}
+
+.cal-detail{margin-top:12px;padding-top:12px;border-top:1px solid #EDE7DA;display:none}
+.cal-detail.show{display:block}
+.cal-detail-date{font-size:14px;font-weight:600;color:#3B2F2F;margin-bottom:8px}
+.cal-detail-row{font-size:13px;color:#6B5744;margin-bottom:6px;line-height:1.6}
+.cal-detail-row .cdl{color:#9B8B7A;margin-right:4px}
+.cal-detail-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.cal-detail-tag{font-size:11px;padding:2px 7px;border-radius:4px}
+.cal-detail-tag.yi-done{background:#E8F5E9;color:#558B2F}
+.cal-detail-tag.ji-done{background:#FFEBEE;color:#C62828}
+.cal-detail-tag.custom{background:#FFF8E1;color:#8D6E3F}
+.cal-stats{margin-top:12px;padding:10px;background:#F9F5EE;border-radius:8px}
+.cal-stats-title{font-size:12px;color:#9B8B7A;margin-bottom:6px}
+.cal-stats-row{display:flex;gap:16px;font-size:13px;color:#3B2F2F}
+.cal-stats-item{display:flex;align-items:center;gap:4px}
+.cal-stats-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
 /* no-birth state */
 #mainContent{display:none}
+
+/* 手机端放大字体 */
+@media (max-width: 600px) {
+  .ptog{font-size:14px;padding:6px 0}
+  .blabels span{font-size:13px}
+  .bsep{font-size:22px}
+  .brow input{font-size:22px}
+  .bzc{font-size:20px;padding:5px 0}
+  .bzc .bl{font-size:12px}
+  .mrow{font-size:14px;gap:12px}
+  .mrow .ml{font-size:12px}
+  .mtrait{font-size:14px;line-height:1.6}
+  .xt{font-size:13px;padding:3px 9px}
+  .xjg .gl{font-size:12px}
+  .pbtn{font-size:14px;padding:5px 12px}
+  .setup h2{font-size:22px}
+  .setup p{font-size:15px}
+  .dnav .arr{font-size:20px}
+  .dsolar{font-size:15px}
+  .btoday{font-size:13px}
+  .dlunar{font-size:30px;margin:4px 0}
+  .dgz{font-size:14px}
+  .licon{font-size:30px}
+  .lmsg{font-size:18px;line-height:1.7}
+  .ti{font-size:16px}
+  .ti .tl{font-size:12px}
+  .jrow .jl{font-size:12px}
+  .jrow .ji{font-size:14px;padding:4px 12px}
+  .yjt{font-size:14px}
+  .tg{font-size:14px;padding:5px 10px}
+  .thint{font-size:12px}
+  .cer input{font-size:14px;padding:6px 10px}
+  .cer button{width:32px;font-size:16px}
+  .ct{font-size:13px;padding:4px 10px}
+  .modr .ml{font-size:14px}
+  .mbtn{font-size:14px;padding:5px 12px}
+  .nrow textarea{font-size:14px;height:40px;padding:6px 10px}
+  .sbtn{font-size:15px;padding:10px 0}
+  .foot{font-size:13px;padding:8px 0}
+  .card{padding:10px 14px;margin-bottom:8px}
+  .cal-btn{font-size:14px}
+  .cal-day{font-size:15px;padding:10px 2px}
+  .cal-detail-row{font-size:15px}
+  .cal-detail-date{font-size:16px}
+}
 </style>
 </head>
 <body>
@@ -252,9 +351,12 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       <div class="dgz" id="dgz"></div>
     </div>
 
-    <div class="card lcard neutral" id="lcard">
+    <div class="card lcard neutral" id="lcard" onclick="manualSpeak()">
       <span class="licon" id="licon">😐</span>
       <span class="lmsg" id="lmsg"></span>
+      <div style="text-align:center;margin-top:4px" id="speakRow">
+        <span id="speakHint" style="font-size:10px;color:#9B8B7A;cursor:pointer">🔊 点击播报</span>
+      </div>
     </div>
 
     <div class="card">
@@ -294,7 +396,41 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       <button class="sbtn" onclick="saveJ()">记 录 今 天</button>
     </div>
 
+    <div class="cal-toggle">
+      <button class="cal-btn" onclick="openCal()">📅 查看历史记录</button>
+    </div>
+
     <div class="foot">顺势而为 · 万事可期</div>
+
+  <!-- 日历弹窗 -->
+  <div class="cal-overlay" id="calOverlay" onclick="if(event.target===this)closeCal()">
+    <div class="cal-panel">
+      <div class="cal-header">
+        <span class="cal-title">运势日历</span>
+        <button class="cal-close" onclick="closeCal()">✕</button>
+      </div>
+      <div class="cal-nav">
+        <button class="ca" onclick="calMonth(-1)">‹</button>
+        <span class="cn" id="calMonthLabel"></span>
+        <button class="ca" onclick="calMonth(1)">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>日</span><span>一</span><span>二</span><span>三</span>
+        <span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="cal-days" id="calDays"></div>
+
+      <div class="cal-stats" id="calStats">
+        <div class="cal-stats-title">本月准确度</div>
+        <div class="cal-stats-row" id="calStatsRow"></div>
+      </div>
+
+      <div class="cal-detail" id="calDetail">
+        <div class="cal-detail-date" id="calDetailDate"></div>
+        <div id="calDetailContent"></div>
+      </div>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -302,10 +438,13 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
 <script>
 (function(){
-  var curDate = new Date().toISOString().split('T')[0];
+  // 用手机本地日期，不用 UTC
+  var now = new Date();
+  var curDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   var todayISO = curDate;
   var mood = '';
   var customs = [];
+  var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
 
   // ─── 基础交互（先定义，确保页面可点击） ───
   window.toggleProfile = function(){
@@ -503,15 +642,119 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   function loadFortune(){
     var b = getCurBirth();
     if(!b) return;
+
+    // 先从缓存秒开
+    var cacheKey = 'mystic_cache_' + curDate + '_' + b;
+    var cached = localStorage.getItem(cacheKey);
+    if(cached) {
+      try { renderFortune(JSON.parse(cached)); } catch(e) {}
+    }
+
+    // 后台请求最新数据
     var url = '/api/fortune?birth='+encodeURIComponent(b)+'&date='+curDate;
     fetch(url).then(function(r){return r.json()}).then(function(d){
       renderFortune(d);
-    }).catch(function(){ showToast('加载失败'); });
+      localStorage.setItem(cacheKey, JSON.stringify(d));
+      // 清理旧缓存（只保留最近7天）
+      for(var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if(k && k.startsWith('mystic_cache_') && k !== cacheKey) {
+          var parts = k.split('_');
+          if(parts[2] && parts[2] < new Date(Date.now() - 7*86400000).toISOString().split('T')[0]) {
+            localStorage.removeItem(k);
+          }
+        }
+      }
+    }).catch(function(){
+      if(!cached) showToast('正在唤醒服务，请稍等…');
+      // 服务器冷启动，重试
+      setTimeout(function(){
+        fetch(url).then(function(r){return r.json()}).then(function(d){
+          renderFortune(d);
+          localStorage.setItem(cacheKey, JSON.stringify(d));
+        }).catch(function(){ showToast('加载失败，请稍后再试'); });
+      }, 5000);
+    });
+  }
+
+  // 语音播报（用 edge-tts 生成的自然语音）
+  var voiceAudio = null;
+  var lastFortuneData = null;
+
+  // 预加载语音
+  var voiceReady = false;
+  function preloadVoice() {
+    var b = getCurBirth();
+    if(!b) return;
+    var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
+    voiceAudio = new Audio(url);
+    voiceAudio.defaultPlaybackRate = 1.5;
+    voiceAudio.playbackRate = 1.5;
+    voiceAudio.preload = 'auto';
+    voiceAudio.addEventListener('canplaythrough', function(){ voiceReady = true; }, {once:true});
+    voiceAudio.load();
+  }
+
+  function playVoice() {
+    if(!voiceAudio) {
+      preloadVoice();
+      // 等加载完再播
+      var waitPlay = setInterval(function(){
+        if(voiceReady) { clearInterval(waitPlay); doPlay(); }
+      }, 100);
+      setTimeout(function(){ clearInterval(waitPlay); }, 15000);
+      return;
+    }
+    doPlay();
+  }
+
+  function doPlay() {
+    if(!voiceAudio) return;
+    voiceAudio.currentTime = 0;
+    voiceAudio.playbackRate = 1.5;
+    voiceAudio.play().then(function(){
+      var hint = document.getElementById('speakHint');
+      if(hint) hint.textContent = '🔊 播报中…';
+      voiceAudio.onended = function() {
+        if(hint) hint.textContent = '🔊 再听一次';
+      };
+    }).catch(function(){
+      var hint = document.getElementById('speakHint');
+      if(hint) hint.textContent = '🔊 点击播报';
+    });
+  }
+
+  window.manualSpeak = function() {
+    playVoice();
+  };
+
+  // 桌面端隐藏播报按钮（由 popup.py 自动播报）
+  if(isLocal) {
+    var sr = document.getElementById('speakRow');
+    if(sr) sr.style.display = 'none';
   }
 
   function renderFortune(d){
     document.getElementById('setupCard').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
+
+    lastFortuneData = d;
+
+    // 预加载语音（页面显示的同时后台下载音频）
+    if(!voiceReady && !isLocal) preloadVoice();
+
+    // 自动播报（仅手机端，桌面端由 popup.py 处理）
+    var spokenKey = 'mystic_spoken_' + curDate;
+    if(!isLocal && !localStorage.getItem(spokenKey)) {
+      function autoSpeak() {
+        localStorage.setItem(spokenKey, '1');
+        playVoice();
+        document.removeEventListener('touchstart', autoSpeak);
+        document.removeEventListener('click', autoSpeak);
+      }
+      document.addEventListener('touchstart', autoSpeak, {once:true});
+      document.addEventListener('click', autoSpeak, {once:true});
+    }
 
     // particles color
     if(d.particle_color){
@@ -687,6 +930,141 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     setTimeout(function(){t.classList.remove('show');},1500);
   }
 })();
+// ─── 日历 ───
+  var calYear, calMon;
+
+  window.openCal = function() {
+    var d = new Date();
+    calYear = d.getFullYear();
+    calMon = d.getMonth();
+    renderCal();
+    document.getElementById('calOverlay').classList.add('show');
+  };
+  window.closeCal = function() {
+    document.getElementById('calOverlay').classList.remove('show');
+  };
+  window.calMonth = function(delta) {
+    calMon += delta;
+    if(calMon < 0) { calMon = 11; calYear--; }
+    if(calMon > 11) { calMon = 0; calYear++; }
+    renderCal();
+  };
+
+  function renderCal() {
+    document.getElementById('calMonthLabel').textContent = calYear + '年' + (calMon+1) + '月';
+    var journal = JSON.parse(localStorage.getItem('mystic_journal') || '{}');
+    var now = new Date();
+    var todayStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+
+    // 月初是星期几
+    var firstDay = new Date(calYear, calMon, 1).getDay();
+    var daysInMonth = new Date(calYear, calMon + 1, 0).getDate();
+
+    var html = '';
+    // 上月补位
+    var prevDays = new Date(calYear, calMon, 0).getDate();
+    for(var i = 0; i < firstDay; i++) {
+      html += '<div class="cal-day other">' + (prevDays - firstDay + 1 + i) + '</div>';
+    }
+    // 本月
+    var moodCount = {yes:0, ok:0, no:0, none:0};
+    for(var d = 1; d <= daysInMonth; d++) {
+      var dateStr = calYear+'-'+String(calMon+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      var entry = journal[dateStr];
+      var cls = 'cal-day';
+      if(dateStr === todayStr) cls += ' today';
+      if(entry) {
+        cls += ' has-journal';
+        if(entry.mood === '很准') { cls += ' mood-yes'; moodCount.yes++; }
+        else if(entry.mood === '还行') { cls += ' mood-ok'; moodCount.ok++; }
+        else if(entry.mood === '不准') { cls += ' mood-no'; moodCount.no++; }
+        else { cls += ' mood-none'; moodCount.none++; }
+      }
+      html += '<div class="'+cls+'" onclick="showCalDetail(\''+dateStr+'\')">' + d + '<div class="cal-dot"></div></div>';
+    }
+    // 下月补位
+    var total = firstDay + daysInMonth;
+    var remaining = (7 - total % 7) % 7;
+    for(var i = 1; i <= remaining; i++) {
+      html += '<div class="cal-day other">' + i + '</div>';
+    }
+    document.getElementById('calDays').innerHTML = html;
+
+    // 统计
+    var statsHtml = '';
+    if(moodCount.yes) statsHtml += '<div class="cal-stats-item"><span class="cal-stats-dot" style="background:#558B2F"></span>很准 '+moodCount.yes+'天</div>';
+    if(moodCount.ok) statsHtml += '<div class="cal-stats-item"><span class="cal-stats-dot" style="background:#C4956A"></span>还行 '+moodCount.ok+'天</div>';
+    if(moodCount.no) statsHtml += '<div class="cal-stats-item"><span class="cal-stats-dot" style="background:#C62828"></span>不准 '+moodCount.no+'天</div>';
+    var totalMood = moodCount.yes + moodCount.ok + moodCount.no;
+    if(totalMood > 0) {
+      var accuracy = Math.round((moodCount.yes + moodCount.ok * 0.5) / totalMood * 100);
+      statsHtml += '<div class="cal-stats-item" style="margin-left:auto;font-weight:600;color:#C4956A">准确率 '+accuracy+'%</div>';
+    }
+    document.getElementById('calStatsRow').innerHTML = statsHtml || '<span style="color:#9B8B7A">暂无记录</span>';
+
+    // 隐藏详情
+    document.getElementById('calDetail').classList.remove('show');
+  }
+
+  window.showCalDetail = function(dateStr) {
+    var journal = JSON.parse(localStorage.getItem('mystic_journal') || '{}');
+    var entry = journal[dateStr];
+
+    var parts = dateStr.split('-');
+    document.getElementById('calDetailDate').textContent = parts[0]+'年'+parseInt(parts[1])+'月'+parseInt(parts[2])+'日';
+
+    var html = '';
+    if(!entry) {
+      html = '<div class="cal-detail-row" style="color:#9B8B7A">这天没有记录</div>';
+      // 但可以查看运势
+      html += '<div style="margin-top:8px"><button class="cal-btn" onclick="closeCal();jumpToDateFromCal(\''+dateStr+'\')">查看这天运势 →</button></div>';
+    } else {
+      if(entry.mood) {
+        var moodColor = entry.mood==='很准'?'#558B2F':entry.mood==='不准'?'#C62828':'#C4956A';
+        html += '<div class="cal-detail-row"><span class="cdl">运势评价</span><span style="color:'+moodColor+';font-weight:500">'+entry.mood+'</span></div>';
+      }
+      if(entry.yi_done && entry.yi_done.length) {
+        html += '<div class="cal-detail-row"><span class="cdl">做了（宜）</span></div><div class="cal-detail-tags">';
+        entry.yi_done.forEach(function(t){ html += '<span class="cal-detail-tag yi-done">'+t+'</span>'; });
+        html += '</div>';
+      }
+      if(entry.ji_done && entry.ji_done.length) {
+        html += '<div class="cal-detail-row"><span class="cdl">做了（忌）</span></div><div class="cal-detail-tags">';
+        entry.ji_done.forEach(function(t){ html += '<span class="cal-detail-tag ji-done">'+t+'</span>'; });
+        html += '</div>';
+      }
+      if(entry.customs && entry.customs.length) {
+        html += '<div class="cal-detail-row"><span class="cdl">其他</span></div><div class="cal-detail-tags">';
+        entry.customs.forEach(function(t){ html += '<span class="cal-detail-tag custom">'+t+'</span>'; });
+        html += '</div>';
+      }
+      if(entry.note) {
+        html += '<div class="cal-detail-row"><span class="cdl">感受</span>'+entry.note+'</div>';
+      }
+      html += '<div style="margin-top:8px"><button class="cal-btn" onclick="closeCal();jumpToDateFromCal(\''+dateStr+'\')">查看这天运势 →</button></div>';
+    }
+    document.getElementById('calDetailContent').innerHTML = html;
+    document.getElementById('calDetail').classList.add('show');
+  };
+
+  window.jumpToDateFromCal = function(dateStr) {
+    curDate = dateStr;
+    loadFortune();
+  };
+
+  // 退出/切后台时停止语音
+  document.addEventListener('visibilitychange', function() {
+    if(document.hidden && voiceAudio) {
+      voiceAudio.pause();
+      var hint = document.getElementById('speakHint');
+      if(hint) hint.textContent = '🔊 点击播报';
+    }
+  });
+
+// 注册 Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/static/sw.js').catch(function(){});
+}
 </script>
 </body>
 </html>
