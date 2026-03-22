@@ -744,9 +744,6 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   var audioSource = null;
   var speechUtter = null;
 
-  function preloadVoice() {
-    // 不需要预加载，用本地 TTS 秒播
-  }
 
   function buildSpeechText(d) {
     if(!d || !d.luck_msg) return '';
@@ -768,46 +765,55 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       + closing;
   }
 
+  // 统一用微软语音（自然），预加载减少延迟
+  var voiceAudio = null;
+  var voiceReady = false;
+
+  function preloadVoice() {
+    var b = getCurBirth();
+    if(!b) return;
+    voiceReady = false;
+    var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
+    voiceAudio = new Audio(url);
+    voiceAudio.preload = 'auto';
+    voiceAudio.addEventListener('canplaythrough', function(){ voiceReady = true; }, {once:true});
+    voiceAudio.load();
+  }
+
   function playVoice() {
-    if(!lastFortuneData) return;
-    var text = buildSpeechText(lastFortuneData);
-    if(!text) return;
-
-    // 停掉之前的
-    stopVoice();
-
-    if('speechSynthesis' in window) {
-      speechUtter = new SpeechSynthesisUtterance(text);
-      speechUtter.lang = 'zh-CN';
-      speechUtter.rate = 0.9;
-      speechUtter.pitch = 1.05;
-      var voices = speechSynthesis.getVoices();
-      for(var i = 0; i < voices.length; i++) {
-        if(voices[i].lang && voices[i].lang.startsWith('zh')) {
-          speechUtter.voice = voices[i]; break;
-        }
+    if(voiceReady && voiceAudio) {
+      doPlayAudio();
+    } else {
+      // 还没加载好，用本地 TTS 先顶上
+      if(!lastFortuneData) return;
+      var text = buildSpeechText(lastFortuneData);
+      if(!text) return;
+      stopVoice();
+      if('speechSynthesis' in window) {
+        speechUtter = new SpeechSynthesisUtterance(text);
+        speechUtter.lang = 'zh-CN';
+        speechUtter.rate = 1.0;
+        var hint = document.getElementById('speakHint');
+        if(hint) hint.textContent = '🔊 播报中…';
+        speechUtter.onend = function() { if(hint) hint.textContent = '🔊 再听一次'; };
+        speechSynthesis.speak(speechUtter);
       }
-      var hint = document.getElementById('speakHint');
-      if(hint) hint.textContent = '🔊 播报中…';
-      speechUtter.onend = function() {
-        if(hint) hint.textContent = '🔊 再听一次';
-      };
-      speechSynthesis.speak(speechUtter);
     }
   }
 
-  // 桌面端用微软语音（通过服务器 edge-tts）
-  var desktopAudio = null;
-  function playDesktopVoice() {
-    var b = getCurBirth();
-    if(!b) return;
-    var url = '/api/speak?birth=' + encodeURIComponent(b) + '&date=' + curDate;
-    desktopAudio = new Audio(url);
-    desktopAudio.play().catch(function(){});
+  function doPlayAudio() {
+    if(!voiceAudio) return;
+    stopVoice();
+    voiceAudio.currentTime = 0;
+    voiceAudio.play().then(function(){
+      var hint = document.getElementById('speakHint');
+      if(hint) hint.textContent = '🔊 播报中…';
+      voiceAudio.onended = function() { if(hint) hint.textContent = '🔊 再听一次'; };
+    }).catch(function(){});
   }
 
   window.manualSpeak = function() {
-    if(isDesktop) { playDesktopVoice(); } else { playVoice(); }
+    if(voiceReady && voiceAudio) { doPlayAudio(); } else { playVoice(); }
   };
 
   // 桌面端隐藏播报按钮
@@ -830,7 +836,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
       if(isDesktop) {
         // 桌面端：用服务器生成的微软语音
         localStorage.setItem(spokenKey, '1');
-        setTimeout(function(){ playDesktopVoice(); }, 500);
+        setTimeout(function(){ doPlayAudio(); }, 500);
       } else {
         // 手机端：等触屏后播报
         function autoSpeak() {
@@ -1202,9 +1208,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   // 退出/切后台时停止语音
   function stopVoice() {
     if('speechSynthesis' in window) speechSynthesis.cancel();
-    if(desktopAudio) try { desktopAudio.pause(); desktopAudio.currentTime=0; } catch(e) {}
-    if(audioSource) try { audioSource.stop(); } catch(e) {}
-    if(audioCtx) try { audioCtx.suspend(); } catch(e) {}
+    if(voiceAudio) try { voiceAudio.pause(); voiceAudio.currentTime=0; } catch(e) {}
     var hint = document.getElementById('speakHint');
     if(hint) hint.textContent = '🔊 点击播报';
   }
