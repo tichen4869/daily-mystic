@@ -455,6 +455,21 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   var customs = [];
   var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
 
+  // 每个用户独立的 journal key
+  function journalKey() {
+    var b = getCurBirth();
+    return 'mystic_journal_' + (b || 'default');
+  }
+  // 迁移旧数据
+  var oldJ = localStorage.getItem('mystic_journal');
+  if(oldJ) {
+    var curKey = journalKey();
+    if(!localStorage.getItem(curKey)) {
+      localStorage.setItem(curKey, oldJ);
+    }
+    localStorage.removeItem('mystic_journal');
+  }
+
   // ─── 基础交互（先定义，确保页面可点击） ───
   window.toggleProfile = function(){
     document.getElementById('profSec').classList.toggle('show');
@@ -541,6 +556,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     savePersons();
     fillBirth(getCurBirth());
     loadFortune();
+    loadJ();
     renderPersons();
   };
 
@@ -908,9 +924,9 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     document.querySelectorAll('#yiTags .yi-tag.checked').forEach(function(e){yi.push(e.textContent);});
     document.querySelectorAll('#jiTags .ji-tag.checked').forEach(function(e){ji.push(e.textContent);});
     var note = document.getElementById('noteIn').value.trim();
-    var j = JSON.parse(localStorage.getItem('mystic_journal')||'{}');
+    var j = JSON.parse(localStorage.getItem(journalKey())||'{}');
     j[curDate] = {yi:yi, ji:ji, customs:customs.slice(), mood:mood, note:note};
-    localStorage.setItem('mystic_journal', JSON.stringify(j));
+    localStorage.setItem(journalKey(), JSON.stringify(j));
     showToast('已记录 ✓');
   };
 
@@ -922,7 +938,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     document.getElementById('noteIn').value = '';
     document.querySelectorAll('.yi-tag.checked,.ji-tag.checked').forEach(function(e){e.classList.remove('checked');});
 
-    var j = JSON.parse(localStorage.getItem('mystic_journal')||'{}');
+    var j = JSON.parse(localStorage.getItem(journalKey())||'{}');
     var entry = j[curDate];
     if(!entry) return;
     if(entry.yi) entry.yi.forEach(function(t){
@@ -973,7 +989,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
 
   function renderCal() {
     document.getElementById('calMonthLabel').textContent = calYear + '年' + (calMon+1) + '月';
-    var journal = JSON.parse(localStorage.getItem('mystic_journal') || '{}');
+    var journal = JSON.parse(localStorage.getItem(journalKey()) || '{}');
     var now = new Date();
     var todayStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
 
@@ -1028,7 +1044,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   }
 
   window.showCalDetail = function(dateStr) {
-    var journal = JSON.parse(localStorage.getItem('mystic_journal') || '{}');
+    var journal = JSON.parse(localStorage.getItem(journalKey()) || '{}');
     var entry = journal[dateStr];
 
     var parts = dateStr.split('-');
