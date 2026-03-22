@@ -38,11 +38,11 @@ def start_server():
 
 
 def speak_fortune():
-    """用 macOS say 命令语音播报今日运势"""
+    """用微软 edge-tts 语音播报"""
     import json
     import urllib.request
+    import tempfile
 
-    # 读取本地生辰
     config_path = os.path.join(DIR, "..", "config.json")
     birth = ""
     if os.path.exists(config_path):
@@ -52,16 +52,14 @@ def speak_fortune():
         return
 
     try:
-        url = f"{URL}/api/voice?birth={urllib.parse.quote(birth)}"
-        with urllib.request.urlopen(url, timeout=5) as r:
-            data = json.loads(r.read())
-            text = data.get("text", "")
-            if text:
-                # 用 macOS 中文语音播报
-                # 去掉 emoji 再播报
-                import re
-                clean = re.sub(r'[\U00010000-\U0010ffff]', '', text)
-                subprocess.Popen(["say", "-v", "Tingting", "-r", "220", clean])
+        # 下载 MP3
+        url = f"{URL}/api/speak?birth={urllib.parse.quote(birth)}"
+        tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        with urllib.request.urlopen(url, timeout=30) as r:
+            tmp.write(r.read())
+        tmp.close()
+        # 用 afplay 播放（macOS 自带）
+        subprocess.Popen(["afplay", tmp.name])
     except Exception:
         pass
 

@@ -260,7 +260,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     <div class="card lcard neutral" id="lcard" onclick="manualSpeak()">
       <span class="licon" id="licon">😐</span>
       <span class="lmsg" id="lmsg"></span>
-      <div style="text-align:center;margin-top:4px">
+      <div style="text-align:center;margin-top:4px" id="speakRow">
         <span id="speakHint" style="font-size:10px;color:#9B8B7A;cursor:pointer">🔊 点击播报</span>
       </div>
     </div>
@@ -573,21 +573,24 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     playVoice();
   };
 
+  // 桌面端隐藏播报按钮（由 popup.py 自动播报）
+  var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+  if(isLocal) {
+    var sr = document.getElementById('speakRow');
+    if(sr) sr.style.display = 'none';
+  }
+
   function renderFortune(d){
     document.getElementById('setupCard').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
 
     lastFortuneData = d;
 
-    // 自动播报：触屏后立即播放（iOS 要求至少一次交互）
+    // 自动播报（仅手机端，桌面端由 popup.py 处理）
+    var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
     var spokenKey = 'mystic_spoken_' + curDate;
-    if(!localStorage.getItem(spokenKey)) {
-      // 先尝试直接播放
-      var tryAuto = setTimeout(function(){ playVoice(); }, 300);
-
-      // 如果被拦截，等用户触屏
+    if(!isLocal && !localStorage.getItem(spokenKey)) {
       function autoSpeak() {
-        clearTimeout(tryAuto);
         localStorage.setItem(spokenKey, '1');
         playVoice();
         document.removeEventListener('touchstart', autoSpeak);
