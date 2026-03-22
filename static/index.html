@@ -1022,7 +1022,6 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     t.textContent=msg;t.classList.add('show');
     setTimeout(function(){t.classList.remove('show');},1500);
   }
-})();
 // ─── 日历 ───
   var calYear, calMon;
 
@@ -1184,6 +1183,7 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
   // 记录访问量
   fetch('/api/ping').catch(function(){});
 
+})();
 // 注册 Service Worker
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/static/sw.js').catch(function(){});
