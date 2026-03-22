@@ -503,9 +503,8 @@ def api_voice():
 
 @app.route("/api/speak")
 def api_speak():
-    """生成自然语音 MP3"""
-    import asyncio
-    import edge_tts
+    """生成语音 MP3（用 Google Translate TTS）"""
+    import urllib.request
     import tempfile
 
     birth = request.args.get("birth", "")
@@ -549,16 +548,37 @@ def api_speak():
         f"{closing}"
     )
 
-    async def generate():
-        communicate = edge_tts.Communicate(text, "zh-CN-XiaoxiaoNeural", rate="+5%")
+    # 尝试 edge-tts（本地），失败则用 gTTS
+    try:
+        import asyncio
+        import edge_tts
         tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-        await communicate.save(tmp.name)
-        return tmp.name
+        async def gen():
+            c = edge_tts.Communicate(text, "zh-CN-XiaoxiaoNeural", rate="+5%")
+            await c.save(tmp.name)
+        asyncio.run(gen())
+        from flask import send_file
+        return send_file(tmp.name, mimetype="audio/mpeg")
+    except Exception:
+        pass
 
-    mp3_path = asyncio.run(generate())
+    # 回退：Google Translate TTS（分段，每段 200 字以内）
+    import io
+    chunks = [text[i:i+200] for i in range(0, len(text), 200)]
+    audio_data = io.BytesIO()
+    for chunk in chunks:
+        encoded = urllib.parse.quote(chunk)
+        url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q={encoded}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                audio_data.write(r.read())
+        except Exception:
+            pass
 
+    audio_data.seek(0)
     from flask import send_file
-    return send_file(mp3_path, mimetype="audio/mpeg")
+    return send_file(audio_data, mimetype="audio/mpeg")
 
 
 @app.route("/")
