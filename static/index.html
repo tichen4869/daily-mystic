@@ -708,33 +708,42 @@ body{font-family:"PingFang SC","Noto Serif SC","STSong",serif;background:#F5F0E8
     var cached = localStorage.getItem(cacheKey);
     if(cached) {
       try { renderFortune(JSON.parse(cached)); } catch(e) {}
+    } else {
+      // 没有当天缓存，找最近一天的缓存先顶上（改日期显示）
+      var fallback = null;
+      for(var i = 1; i <= 7; i++) {
+        var d2 = new Date(curDate);
+        d2.setDate(d2.getDate() - i);
+        var k2 = 'mystic_cache_' + d2.getFullYear()+'-'+String(d2.getMonth()+1).padStart(2,'0')+'-'+String(d2.getDate()).padStart(2,'0') + '_' + b;
+        var c2 = localStorage.getItem(k2);
+        if(c2) { fallback = JSON.parse(c2); break; }
+      }
+      if(fallback) {
+        // 用旧数据先显示框架，标记为加载中
+        fallback._stale = true;
+        renderFortune(fallback);
+        showToast('正在获取今日运势…');
+      }
     }
 
     // 后台请求最新数据
     var url = '/api/fortune?birth='+encodeURIComponent(b)+'&date='+curDate;
-    fetch(url).then(function(r){return r.json()}).then(function(d){
-      renderFortune(d);
-      localStorage.setItem(cacheKey, JSON.stringify(d));
-      // 清理旧缓存（只保留最近7天）
-      for(var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if(k && k.startsWith('mystic_cache_') && k !== cacheKey) {
-          var parts = k.split('_');
-          if(parts[2] && parts[2] < new Date(Date.now() - 7*86400000).toISOString().split('T')[0]) {
-            localStorage.removeItem(k);
-          }
-        }
-      }
-    }).catch(function(){
-      if(!cached) showToast('正在唤醒服务，请稍等…');
-      // 服务器冷启动，重试
-      setTimeout(function(){
-        fetch(url).then(function(r){return r.json()}).then(function(d){
+    var retryCount = 0;
+    function fetchFortune() {
+      fetch(url, {signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined})
+        .then(function(r){return r.json()})
+        .then(function(d){
           renderFortune(d);
           localStorage.setItem(cacheKey, JSON.stringify(d));
-        }).catch(function(){ showToast('加载失败，请稍后再试'); });
-      }, 5000);
-    });
+        }).catch(function(){
+          retryCount++;
+          if(retryCount <= 3) {
+            if(!cached && retryCount === 1) showToast('服务唤醒中…');
+            setTimeout(fetchFortune, 5000);
+          }
+        });
+    }
+    fetchFortune();
   }
 
   // 语音播报（用 edge-tts 生成的自然语音）
